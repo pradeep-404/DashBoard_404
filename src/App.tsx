@@ -31,23 +31,15 @@ export default function App() {
           </div>
         </div>
 
-        {localStorage.getItem('superadmin') === 'true' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '0 20px 24px' }}>
-            <button 
-              onClick={() => fileInputRef.current?.click()}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '10px 14px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '14px', cursor: 'pointer', fontWeight: 600, backgroundColor: '#185FA5' }}
-            >
-              <Upload size={16} /> Upload CSV/Excel
-            </button>
-            <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style={{ display: 'none' }} ref={fileInputRef} onChange={handleFileUpload} />
-            <button 
-              onClick={() => { localStorage.removeItem('superadmin'); window.location.reload(); }}
-              style={{ background: 'transparent', border: 'none', color: '#93b8d8', fontSize: '12px', cursor: 'pointer', marginTop: '4px' }}
-            >
-              Logout Admin
-            </button>
-          </div>
-        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '0 20px 24px' }}>
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '10px 14px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '14px', cursor: 'pointer', fontWeight: 600, backgroundColor: '#185FA5' }}
+          >
+            <Upload size={16} /> Upload CSV/Excel
+          </button>
+          <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style={{ display: 'none' }} ref={fileInputRef} onChange={handleFileUpload} />
+        </div>
 
         <div className="sb-nav">
           <div className="sb-sec">Pages</div>

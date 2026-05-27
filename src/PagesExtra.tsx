@@ -28,7 +28,6 @@ export function Page3() {
                   </div>
               </div>
           ))}
-          {empMap.length === 0 && <div style={{textAlign: 'center', color: 'var(--color-text-secondary)', padding: '10px', fontSize: '11px'}}>No data for selection</div>}
         </div>
       </div>
     </div>
