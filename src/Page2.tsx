@@ -28,10 +28,10 @@ export default function Page2() {
 
   return (
     <div className="pg on">
-      <div className="pgtitle"><Table size={16} className="text-[#185FA5]" />Project × employee</div>
+      <div className="pgtitle"><Table size={24} className="text-[#185FA5]" />Project × employee</div>
       <div className="card">
         <div className="ctitle">
-          <Grid size={13} className="text-slate-500 shrink-0" />
+          <Grid size={20} className="text-slate-500 shrink-0" />
           <span className="ctitle-name">Hours heatmap — employee × project (Top 6 projects)</span>
           <div className="cf">
             <label>Month</label>

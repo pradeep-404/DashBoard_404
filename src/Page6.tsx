@@ -16,10 +16,10 @@ export default function Page6() {
 
   return (
     <div className="pg on">
-      <div className="pgtitle"><UserCheck size={16} className="text-[#185FA5]" />Employee → Projects</div>
+      <div className="pgtitle"><UserCheck size={24} className="text-[#185FA5]" />Employee → Projects</div>
       <div className="card" style={{ padding: '10px' }}>
         <div className="ctitle">
-          <Users size={13} className="text-slate-500 shrink-0" />
+          <Users size={20} className="text-slate-500 shrink-0" />
           <span className="ctitle-name">Employee project breakdown</span>
           <div className="cf">
             <label>Month</label><select className="fsel" value={month} onChange={e=>setMonth(e.target.value)}><option value="all">All</option>{uniqueMonths.map(m=><option key={m} value={m}>{m}</option>)}</select>

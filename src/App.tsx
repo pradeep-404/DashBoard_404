@@ -24,37 +24,45 @@ export default function App() {
     <div className="app">
       <div className="sb">
         <div className="sb-logo">
-          <BarChart3 className="text-[#93b8d8]" size={17} />
+          <BarChart3 className="text-[#93b8d8]" size={24} />
           <div>
             <div className="sb-logo-text">Timesheet Tracker</div>
             <div className="sb-logo-sub">Manager Dashboard</div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', margin: '0 12px 16px' }}>
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%', padding: '6px 8px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '4px', fontSize: '11px', cursor: 'pointer', fontWeight: 500 }}
-          >
-            <Upload size={12} /> Upload CSV/Excel
-          </button>
-          <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style={{ display: 'none' }} ref={fileInputRef} onChange={handleFileUpload} />
-        </div>
+        {localStorage.getItem('superadmin') === 'true' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '0 20px 24px' }}>
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '10px 14px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '14px', cursor: 'pointer', fontWeight: 600, backgroundColor: '#185FA5' }}
+            >
+              <Upload size={16} /> Upload CSV/Excel
+            </button>
+            <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style={{ display: 'none' }} ref={fileInputRef} onChange={handleFileUpload} />
+            <button 
+              onClick={() => { localStorage.removeItem('superadmin'); window.location.reload(); }}
+              style={{ background: 'transparent', border: 'none', color: '#93b8d8', fontSize: '12px', cursor: 'pointer', marginTop: '4px' }}
+            >
+              Logout Admin
+            </button>
+          </div>
+        )}
 
         <div className="sb-nav">
           <div className="sb-sec">Pages</div>
-          <NavItem icon={<Home size={13} />} text="Overview" active={page === 0} onClick={() => setPage(0)} />
-          <NavItem icon={<FolderOpen size={13} />} text="Per project hours" active={page === 1} onClick={() => setPage(1)} />
-          <NavItem icon={<Table size={13} />} text="Project × employee" active={page === 2} onClick={() => setPage(2)} />
-          <NavItem icon={<Users size={13} />} text="Employee hours" active={page === 3} onClick={() => setPage(3)} />
-          <NavItem icon={<FileText size={13} />} text="Timesheet detail" active={page === 4} onClick={() => setPage(4)} />
-          <NavItem icon={<Flag size={13} />} text="Missing timesheets" active={page === 5} onClick={() => setPage(5)} />
-          <NavItem icon={<UserCheck size={13} />} text="Employee → Projects" active={page === 6} onClick={() => setPage(6)} />
+          <NavItem icon={<Home size={18} />} text="Overview" active={page === 0} onClick={() => setPage(0)} />
+          <NavItem icon={<FolderOpen size={18} />} text="Per project hours" active={page === 1} onClick={() => setPage(1)} />
+          <NavItem icon={<Table size={18} />} text="Project × employee" active={page === 2} onClick={() => setPage(2)} />
+          <NavItem icon={<Users size={18} />} text="Employee hours" active={page === 3} onClick={() => setPage(3)} />
+          <NavItem icon={<FileText size={18} />} text="Timesheet detail" active={page === 4} onClick={() => setPage(4)} />
+          <NavItem icon={<Flag size={18} />} text="Missing timesheets" active={page === 5} onClick={() => setPage(5)} />
+          <NavItem icon={<UserCheck size={18} />} text="Employee → Projects" active={page === 6} onClick={() => setPage(6)} />
         </div>
         <div className="sb-foot">
-          <Calendar size={10} className="inline mr-1 -mt-0.5" /> All loaded dates<br />
-          <Users size={10} className="inline mr-1 -mt-0.5" /> {[...new Set(entries.map(e=>e.employee))].length} employees · {[...new Set(entries.map(e=>e.project))].length} projects<br />
-          <FileIcon size={10} className="inline mr-1 -mt-0.5" /> {entries.length} entries
+          <Calendar size={14} className="inline mr-2 -mt-1" /> All loaded dates<br />
+          <Users size={14} className="inline mr-2 -mt-1" /> {[...new Set(entries.map(e=>e.employee))].length} employees · {[...new Set(entries.map(e=>e.project))].length} projects<br />
+          <FileIcon size={14} className="inline mr-2 -mt-1" /> {entries.length} entries
         </div>
       </div>
 

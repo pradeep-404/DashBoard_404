@@ -14,17 +14,20 @@ export function Page3() {
 
   return (
     <div className="pg on">
-      <div className="pgtitle"><Users size={16} className="text-[#185FA5]" />Employee hours</div>
+      <div className="pgtitle"><Users size={24} className="text-[#185FA5]" />Employee hours</div>
       <div className="card">
-        <div className="ctitle"><BarChart3 size={13} className="text-slate-500 shrink-0" /><span className="ctitle-name">Total hours per employee</span>
+        <div className="ctitle"><BarChart3 size={20} className="text-slate-500 shrink-0" /><span className="ctitle-name">Total hours per employee</span>
         <div className="cf"><label>Month</label><select className="fsel" value={month} onChange={e=>setMonth(e.target.value)}><option value="all">All</option>{uniqueMonths.map(m=><option key={m} value={m}>{m}</option>)}</select></div>
         </div>
-        <div className="hbars">
+        <div className="hbars" style={{ gap: '16px' }}>
           {empMap.map((e, i) => (
-              <div className="hbrow" key={e.name}>
-                  <span className="hblabel">{e.name}</span>
-                  <div className="hbtrack">
-                      <div className="hbfill" style={{ width: `${Math.max(5, (e.hrs/maxHr)*100)}%`, background: getColor(i) }}>{e.hrs}h</div>
+              <div className="hbrow" key={e.name} style={{ gap: '16px', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '160px', flexShrink: 0, justifyContent: 'flex-end' }}>
+                     <div className="avatar" style={{ background: `linear-gradient(135deg, ${getColor(i)}, ${getColor(i+3)})`, color: '#fff' }}>{e.name.substring(0,2)}</div>
+                     <span className="hblabel" style={{ width: 'auto', textAlign: 'left', fontWeight: '600' }}>{e.name}</span>
+                  </div>
+                  <div className="hbtrack" style={{ height: '32px', borderRadius: '16px', background: 'var(--color-background-tertiary)', overflow: 'hidden' }}>
+                      <div className="hbfill" style={{ width: `${Math.max(8, (e.hrs/maxHr)*100)}%`, background: `linear-gradient(90deg, ${getColor(i)}, ${getColor(i+2)})`, borderRadius: '16px', fontSize: '13px', paddingLeft: '12px' }}>{e.hrs}h</div>
                   </div>
               </div>
           ))}
@@ -49,10 +52,10 @@ export function Page4() {
   
   return (
     <div className="pg on">
-      <div className="pgtitle"><FileText size={16} className="text-[#185FA5]" />Timesheet detail</div>
+      <div className="pgtitle"><FileText size={24} className="text-[#185FA5]" />Timesheet detail</div>
       <div className="card">
         <div className="ctitle">
-          <ListIcon size={13} className="text-slate-500 shrink-0" />
+          <ListIcon size={20} className="text-slate-500 shrink-0" />
           <span className="ctitle-name">All entries</span>
           <div className="cf">
             <label>Month</label><select className="fsel" value={month} onChange={e=>{setMonth(e.target.value); setPg(0);}}><option value="all">All</option>{uniqueMonths.map(m=><option key={m} value={m}>{m}</option>)}</select>
@@ -115,10 +118,10 @@ export function Page5() {
   
   return (
     <div className="pg on">
-      <div className="pgtitle"><Flag size={16} className="text-[#185FA5]" />Missing timesheets</div>
+      <div className="pgtitle"><Flag size={24} className="text-[#185FA5]" />Missing timesheets</div>
       <div className="card">
         <div className="ctitle">
-          <Flag size={13} className="text-[#A32D2D] shrink-0" />
+          <Flag size={20} className="text-[#A32D2D] shrink-0" />
           <span className="ctitle-name text-[#A32D2D]">Problem entries — Missing Days & Under 35 hours/week</span>
           <div className="cf">
             <label>Month</label>

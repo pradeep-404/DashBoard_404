@@ -29,11 +29,11 @@ export default function Overview() {
   const donutMap = computeProjectHrs(donutFiltered);
   const donutTotal = computeTotalHrs(donutFiltered) || 1;
   let off = 0;
-  const C = 2 * Math.PI * 25;
+  const C = 2 * Math.PI * 40;
 
   return (
     <div className="pg on">
-      <div className="pgtitle"><LayoutDashboard size={16} className="text-[#185FA5]" />Manager overview</div>
+      <div className="pgtitle"><LayoutDashboard size={24} className="text-[#185FA5]" />Manager overview</div>
       <div className="krow">
         <div className="kcard"><div className="kl">Total hours</div><div className="kv">{totalHrs}</div><div className="ks">{month === 'all' && week === 'all' ? 'All time' : 'Filtered'}</div></div>
         <div className="kcard blu"><div className="kl">Weekly avg</div><div className="kv">{avgHrs}h</div><div className="ks">Per week</div></div>
@@ -43,7 +43,7 @@ export default function Overview() {
       <div className="row2">
         <div className="card">
           <div className="ctitle">
-            <BarChart3 size={13} className="text-slate-500 shrink-0" />
+            <BarChart3 size={20} className="text-slate-500 shrink-0" />
             <span className="ctitle-name">Working hours by project</span>
             <div className="cf">
               <label>Month</label>
@@ -72,7 +72,7 @@ export default function Overview() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
           <div className="card">
             <div className="ctitle">
-              <PieChart size={13} className="text-slate-500 shrink-0" />
+              <PieChart size={20} className="text-slate-500 shrink-0" />
               <span className="ctitle-name">Project hours</span>
               <div className="cf">
                 <label>Employee</label>
@@ -83,15 +83,15 @@ export default function Overview() {
               </div>
             </div>
             <div className="donut-row">
-              <svg width="72" height="72" viewBox="0 0 72 72">
-                <circle cx="36" cy="36" r="25" fill="none" stroke="var(--color-background-secondary)" strokeWidth="12" />
+              <svg width="120" height="120" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="40" fill="none" stroke="var(--color-background-secondary)" strokeWidth="18" />
                 {donutMap.map((p, i) => {
                   const dash = (p.hrs / donutTotal) * C;
-                  const el = <circle key={p.name} cx="36" cy="36" r="25" fill="none" stroke={getColor(i)} strokeWidth="12" strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-off} />;
+                  const el = <circle key={p.name} cx="60" cy="60" r="40" fill="none" stroke={getColor(i)} strokeWidth="18" strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-off} />;
                   off += dash;
                   return el;
                 })}
-                <text x="36" y="39" textAnchor="middle" fontSize="9" fontWeight="500" fill="var(--color-text-primary)">{donutTotal}h</text>
+                <text x="60" y="66" textAnchor="middle" fontSize="16" fontWeight="600" fill="var(--color-text-primary)">{donutTotal}h</text>
               </svg>
               <div className="leg">
                 {donutMap.slice(0, 5).map((p, i) => (
@@ -106,7 +106,7 @@ export default function Overview() {
           </div>
           <div className="card">
             <div className="ctitle">
-              <TrendingUp size={13} className="text-slate-500 shrink-0" />
+              <TrendingUp size={20} className="text-slate-500 shrink-0" />
               <span className="ctitle-name">Weekly trend</span>
               <div className="cf">
                 <label>Month</label>
@@ -144,7 +144,7 @@ export default function Overview() {
         </div>
       </div>
       <div className="card">
-        <div className="ctitle"><Flag size={13} className="text-[#A32D2D] shrink-0" /><span className="ctitle-name text-[#A32D2D]">Latest missing / under-hours flags</span></div>
+        <div className="ctitle"><Flag size={20} className="text-[#A32D2D] shrink-0" /><span className="ctitle-name text-[#A32D2D]">Latest missing / under-hours flags</span></div>
         <table className="tbl">
           <thead><tr><th>Employee</th><th>Week</th><th>Project</th><th>Hours</th><th>Status</th></tr></thead>
           <tbody>
