@@ -22,29 +22,25 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
   const [loading, setLoading] = useState(true);
 
   React.useEffect(() => {
-    fetch('/api/entries')
-      .then(r => r.json())
-      .then(data => {
-        if (data.length > 0) {
-          setEntries(data);
+    const localData = localStorage.getItem('timesheet_entries');
+    if (localData) {
+      try {
+        const parsed = JSON.parse(localData);
+        if (parsed.length > 0) {
+          setEntries(parsed);
         }
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error('Failed to load from backend:', err);
-        setLoading(false);
-      });
+      } catch (e) {
+        console.error('Failed to parse local entries');
+      }
+    }
+    setLoading(false);
   }, []);
 
   const saveEntriesToBackend = async (newEntries: TimeEntry[]) => {
     try {
-      await fetch('/api/entries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newEntries)
-      });
+      localStorage.setItem('timesheet_entries', JSON.stringify(newEntries));
     } catch (e) {
-      console.error('Failed to save to backend:', e);
+      console.error('Failed to save to local storage:', e);
     }
   };
 

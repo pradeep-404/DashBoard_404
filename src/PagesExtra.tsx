@@ -19,18 +19,16 @@ export function Page3() {
         <div className="ctitle"><BarChart3 size={20} className="text-slate-500 shrink-0" /><span className="ctitle-name">Total hours per employee</span>
         <div className="cf"><label>Month</label><select className="fsel" value={month} onChange={e=>setMonth(e.target.value)}><option value="all">All</option>{uniqueMonths.map(m=><option key={m} value={m}>{m}</option>)}</select></div>
         </div>
-        <div className="hbars" style={{ gap: '16px' }}>
+        <div className="hbars">
           {empMap.map((e, i) => (
-              <div className="hbrow" key={e.name} style={{ gap: '16px', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '160px', flexShrink: 0, justifyContent: 'flex-end' }}>
-                     <div className="avatar" style={{ background: `linear-gradient(135deg, ${getColor(i)}, ${getColor(i+3)})`, color: '#fff' }}>{e.name.substring(0,2)}</div>
-                     <span className="hblabel" style={{ width: 'auto', textAlign: 'left', fontWeight: '600' }}>{e.name}</span>
-                  </div>
-                  <div className="hbtrack" style={{ height: '32px', borderRadius: '16px', background: 'var(--color-background-tertiary)', overflow: 'hidden' }}>
-                      <div className="hbfill" style={{ width: `${Math.max(8, (e.hrs/maxHr)*100)}%`, background: `linear-gradient(90deg, ${getColor(i)}, ${getColor(i+2)})`, borderRadius: '16px', fontSize: '13px', paddingLeft: '12px' }}>{e.hrs}h</div>
+              <div className="hbrow" key={e.name}>
+                  <span className="hblabel">{e.name}</span>
+                  <div className="hbtrack">
+                      <div className="hbfill" style={{ width: `${Math.max(5, (e.hrs/maxHr)*100)}%`, background: getColor(i) }}>{e.hrs}h</div>
                   </div>
               </div>
           ))}
+          {empMap.length === 0 && <div style={{textAlign: 'center', color: 'var(--color-text-secondary)', padding: '10px', fontSize: '11px'}}>No data for selection</div>}
         </div>
       </div>
     </div>
