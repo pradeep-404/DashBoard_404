@@ -53,7 +53,7 @@ export function getUniqueWeeks(entries: TimeEntry[]) {
   return Array.from(weeks).sort();
 }
 
-export function filterEntries(entries: TimeEntry[], month: string, week: string, emp: string = 'all', proj: string = 'all') {
+export function filterEntries(entries: TimeEntry[], month: string, week: string, emp: string = 'all', proj: string = 'all', projectType: string = 'all') {
   return entries.filter(e => {
     // If specific week is selected, ignore the month filter to show the complete overlapping week
     if (week !== 'all') {
@@ -64,6 +64,7 @@ export function filterEntries(entries: TimeEntry[], month: string, week: string,
     
     if (emp !== 'all' && e.employee !== emp) return false;
     if (proj !== 'all' && e.project !== proj) return false;
+    if (projectType !== 'all' && e.projectType !== projectType) return false;
     return true;
   });
 }
@@ -78,6 +79,18 @@ export function computeProjectHrs(entries: TimeEntry[]) {
   const map: Record<string, number> = {};
   entries.forEach(e => {
     map[e.project] = (map[e.project] || 0) + e.hours;
+  });
+  const arr = Object.entries(map).map(([name, hrs]) => ({ name, hrs }));
+  arr.sort((a, b) => b.hrs - a.hrs);
+  return arr;
+}
+
+// Compute project type grouping
+export function computeProjectTypeHrs(entries: TimeEntry[]) {
+  const map: Record<string, number> = {};
+  entries.forEach(e => {
+    const pt = e.projectType || 'Unknown Type';
+    map[pt] = (map[pt] || 0) + e.hours;
   });
   const arr = Object.entries(map).map(([name, hrs]) => ({ name, hrs }));
   arr.sort((a, b) => b.hrs - a.hrs);

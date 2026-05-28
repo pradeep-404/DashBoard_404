@@ -58,9 +58,9 @@ export function Page4() {
           <div className="cf">
             <label>Month</label><FilterSelect value={month} onChange={v=>{setMonth(v); setPg(0);}} options={[{value:'all',label:'All'}, ...uniqueMonths.map(m=>({value:m,label:m}))]} />
             <div className="fsep"></div>
-            <label>Employee</label><FilterSelect value={emp} onChange={v=>{setEmp(v); setPg(0);}} options={[{value:'all',label:'All'}, ...(Array.from(new Set(entries.map(x=>x.employee))) as string[]).map(x=>({value:x,label:x}))]} />
+            <label>Employee</label><FilterSelect value={emp} onChange={v=>{setEmp(v); setPg(0);}} options={[{value:'all',label:'All'}, ...[...new Set(entries.map(x=>x.employee))].map(x=>({value:x,label:x}))]} />
             <div className="fsep"></div>
-            <label>Project</label><FilterSelect value={proj} onChange={v=>{setProj(v); setPg(0);}} options={[{value:'all',label:'All'}, ...(Array.from(new Set(entries.map(x=>x.project))) as string[]).map(x=>({value:x,label:x}))]} />
+            <label>Project</label><FilterSelect value={proj} onChange={v=>{setProj(v); setPg(0);}} options={[{value:'all',label:'All'}, ...[...new Set(entries.map(x=>x.project))].map(x=>({value:x,label:x}))]} />
           </div>
         </div>
         <div style={{overflowX: 'auto'}}>
@@ -130,7 +130,7 @@ export function Page5() {
             <FilterSelect value={month} onChange={v=>{setMonth(v); setPg(0);}} options={[{value:'all',label:'All'}, ...uniqueMonths.map(m=>({value:m,label:m}))]} />
             <div className="fsep"></div>
             <label>Employee</label>
-            <FilterSelect value={empFilter} onChange={v=>{setEmpFilter(v); setPg(0);}} options={[{value:'all',label:'All'}, ...(Array.from(new Set(entries.map(e=>e.employee))) as string[]).map(e=>({value:e,label:e}))]} />
+            <FilterSelect value={empFilter} onChange={v=>{setEmpFilter(v); setPg(0);}} options={[{value:'all',label:'All'}, ...[...new Set(entries.map(x=>x.employee))].map(e=>({value:e,label:e}))]} />
             <div className="fsep"></div>
             <label>Status</label>
             <FilterSelect value={statusFilter} onChange={v=>{setStatusFilter(v); setPg(0);}} options={[{value:'all',label:'All'}, {value:'Missing Entry',label:'Missing Entry'}, {value:'Under Hours',label:'Under Hours'}]} />

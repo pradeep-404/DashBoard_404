@@ -49,19 +49,12 @@ export default function Overview() {
         <div className="kcard"><div className="kl">Active projects</div><div className="kv">{activeProjs}</div><div className="ks">Running</div></div>
         <div className="kcard red"><div className="kl">🚩 Problem entries</div><div className="kv">{problemCount}</div><div className="ks">Under hours</div></div>
       </div>
-      <div className="row2" style={{ flex: 1, minHeight: 0 }}>
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', minHeight: 0, paddingRight: '12px', paddingBottom: '12px' }}>
+      <div className="row2">
+        <div className="card">
           <div className="ctitle">
             <BarChart3 size={20} className="text-slate-500 shrink-0" />
             <span className="ctitle-name">Working hours by project</span>
             <div className="cf">
-              <label>Project</label>
-              <FilterSelect 
-                value={'all'} 
-                onChange={()=>{}} 
-                options={[{value: 'all', label: 'All'}, ...(Array.from(new Set(entries.map(e => (e as any).project || e.project))) as string[]).map(p => ({value: p, label: p}))]} 
-              />
-              <div className="fsep"></div>
               <label>Month</label>
               <FilterSelect 
                 value={month} 
@@ -77,7 +70,7 @@ export default function Overview() {
               />
             </div>
           </div>
-          <div className="hbars" style={{ overflowY: 'auto', flex: 1, paddingRight: '8px' }}>
+          <div className="hbars" style={{ maxHeight: '420px', overflowY: 'auto', paddingRight: '12px' }}>
             {projHrs.map((p, i) => (
               <div className="hbrow" key={p.name}>
                 <span className="hblabel">{p.name}</span>
@@ -88,9 +81,9 @@ export default function Overview() {
             ))}
           </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minHeight: 0 }}>
-          <div className="card" style={{ padding: '20px' }}>
-            <div className="ctitle" style={{ marginBottom: '12px', paddingBottom: '8px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
+          <div className="card">
+            <div className="ctitle">
               <PieChart size={20} className="text-slate-500 shrink-0" />
               <span className="ctitle-name">Project hours</span>
               <div className="cf">
@@ -98,57 +91,45 @@ export default function Overview() {
                 <FilterSelect 
                   value={donutEmp} 
                   onChange={setDonutEmp} 
-                  options={[{value: 'all', label: 'All'}, ...(Array.from(new Set(entries.map(e => e.employee))) as string[]).map(e => ({value: e, label: e}))]} 
+                  options={[{value: 'all', label: 'All'}, ...[...new Set(entries.map(e => e.employee))].map(e => ({value: e, label: e}))]} 
                 />
               </div>
             </div>
-            <div className="donut-row" style={{ marginTop: '0' }}>
+            <div className="donut-row">
               <svg width="120" height="120" viewBox="0 0 120 120">
                 <circle cx="60" cy="60" r="40" fill="none" stroke="var(--color-background-secondary)" strokeWidth="18" />
-                {(() => {
-                  const slices: {name: string, hrs: number, idx: number}[] = [];
-                  let otherHrs = 0;
-                  donutMap.forEach((p, i) => {
-                    if ((p.hrs / donutTotal) < 0.05) {
-                      otherHrs += p.hrs;
-                    } else {
-                      slices.push({ ...p, idx: i });
-                    }
-                  });
-                  if (otherHrs > 0) slices.push({ name: 'Other', hrs: otherHrs, idx: donutMap.length });
-
-                  let currentOff = 0;
-                  return slices.map((p) => {
-                    const dash = (p.hrs / donutTotal) * C;
-                    const sliceOff = currentOff;
-                    currentOff += dash;
-                    const pct = Math.round((p.hrs / donutTotal) * 100) + '%';
-                    return (
-                      <g key={p.name}>
-                        <circle cx="60" cy="60" r="40" fill="none" stroke={getColor(p.idx)} strokeWidth="18" strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-sliceOff} />
-                        {(p.hrs / donutTotal) > 0.03 && (
-                          <text
-                            x={60 + 30 * Math.cos(2 * Math.PI * ((sliceOff + dash / 2) / C) - Math.PI / 2)}
-                            y={60 + 30 * Math.sin(2 * Math.PI * ((sliceOff + dash / 2) / C) - Math.PI / 2)}
-                            textAnchor="middle" dominantBaseline="central" fontSize="10" fill="#fff" fontWeight="bold" pointerEvents="none"
-                          >
-                            {pct}
-                          </text>
-                        )}
-                      </g>
-                    );
-                  });
-                })()}
+                {donutMap.map((p, i) => {
+                  const dash = (p.hrs / donutTotal) * C;
+                  const currentOff = off;
+                  off += dash;
+                  return (
+                    <g key={p.name}>
+                      <circle cx="60" cy="60" r="40" fill="none" stroke={getColor(i)} strokeWidth="18" strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-currentOff} />
+                      {(p.hrs / donutTotal) > 0.03 && (
+                        <text
+                          x={60 + 30 * Math.cos(2 * Math.PI * ((currentOff + dash / 2) / C) - Math.PI / 2)}
+                          y={60 + 30 * Math.sin(2 * Math.PI * ((currentOff + dash / 2) / C) - Math.PI / 2)}
+                          textAnchor="middle" dominantBaseline="central" fontSize="7" fill="#fff" fontWeight="bold" pointerEvents="none"
+                        >
+                          {p.name.length > 7 ? p.name.substring(0, 6) + '..' : p.name}
+                        </text>
+                      )}
+                    </g>
+                  );
+                })}
                 <text x="60" y="62" textAnchor="middle" dominantBaseline="central" fontSize="14" fontWeight="600" fill="var(--color-text-primary)">{donutTotal}h</text>
               </svg>
               <div className="leg" style={{ maxHeight: '120px', overflowY: 'auto', paddingRight: '4px' }}>
-                {donutMap.map((p, i) => (
-                  <div className="li" key={p.name}>
-                    <div className="li-dot" style={{ background: getColor(i) }}></div>
-                    <span style={{flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80px'}}>{p.name}</span>
-                    <span className="li-hrs">{p.hrs}h</span>
-                  </div>
-                ))}
+                {donutMap.map((p, i) => {
+                  if ((p.hrs / donutTotal) <= 0.03) return null;
+                  return (
+                    <div className="li" key={p.name}>
+                      <div className="li-dot" style={{ background: getColor(i) }}></div>
+                      <span style={{flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80px'}}>{p.name}</span>
+                      <span className="li-hrs">{p.hrs}h</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -194,25 +175,22 @@ export default function Overview() {
                 );
             })()}
           </div>
-          <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <div className="ctitle"><Flag size={20} className="text-[#A32D2D] shrink-0" /><span className="ctitle-name text-[#A32D2D]">Latest missing / under-hours flags</span></div>
-            <div style={{ overflowY: 'auto', flex: 1 }}>
-              <table className="tbl">
-                <thead><tr><th>Employee</th><th>Week</th><th>Project</th><th>Hours</th><th>Status</th></tr></thead>
-                <tbody>
-                  {missData.slice(0, Math.max(3, problemCount)).map((r, i) => (
-                    <tr key={i}>
-                      <td>{r.emp}</td><td>{r.week}</td><td>{r.proj}</td><td>{r.hrs}</td>
-                      <td><span className={`badge b-org`}>Under Hours</span></td>
-                    </tr>
-                  ))}
-                  {missData.length === 0 && (
-                    <tr><td colSpan={5} style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-secondary)' }}>No problem entries</td></tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+        </div>
+      </div>
+      <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div className="ctitle"><Flag size={20} className="text-[#A32D2D] shrink-0" /><span className="ctitle-name text-[#A32D2D]">Latest missing / under-hours flags</span></div>
+        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+          <table className="tbl">
+            <thead><tr><th>Employee</th><th>Week</th><th>Project</th><th>Hours</th><th>Status</th></tr></thead>
+            <tbody>
+              {missData.slice(0, 3).map((r, i) => (
+                <tr key={i}>
+                  <td>{r.emp}</td><td>{r.week}</td><td>{r.proj}</td><td>{r.hrs}</td>
+                  <td><span className={`badge b-org`}>Under Hours</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@ export interface TimeEntry {
   date: string;
   employee: string;
   project: string;
+  projectType?: string;
   hours: number;
   task: string;
   status: string;

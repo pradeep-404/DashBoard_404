@@ -31,8 +31,8 @@ export default function FilterSelect({ value, onChange, options, className }: { 
           position: 'absolute', top: 'calc(100% + 4px)', left: 0, zIndex: 1000,
           background: 'var(--color-background-secondary)', border: '1px solid var(--color-border-secondary)', borderRadius: '6px',
           boxShadow: '0 4px 12px rgba(0,0,0,0.1)', minWidth: '100%',
-          maxHeight: options.length > 10 ? '280px' : 'none', // ~8 items at 34px
-          overflowY: options.length > 10 ? 'auto' : 'visible'
+          maxHeight: options.length > 8 ? '265px' : 'none', // ~8 items at ~33px each
+          overflowY: options.length > 8 ? 'auto' : 'visible'
         }}>
           {options.map((o, i) => (
             <div 

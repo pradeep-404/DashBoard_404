@@ -29,10 +29,7 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
 
   React.useEffect(() => {
     fetch('/api/entries')
-      .then(r => {
-        if (!r.ok) throw new Error('Backend not found');
-        return r.json();
-      })
+      .then(r => r.json())
       .then(data => {
         if (data.length > 0) {
           setEntries(data);
@@ -40,17 +37,12 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
         setLoading(false);
       })
       .catch(err => {
-        console.warn('Backend unavailable, using localStorage');
-        const local = localStorage.getItem('timesheet_entries');
-        if (local) {
-          try { setEntries(JSON.parse(local)); } catch (e) {}
-        }
+        console.error('Failed to load from backend:', err);
         setLoading(false);
       });
   }, []);
 
   const saveEntriesToBackend = async (newEntries: TimeEntry[]) => {
-    localStorage.setItem('timesheet_entries', JSON.stringify(newEntries));
     try {
       await fetch('/api/entries', {
         method: 'POST',
@@ -58,34 +50,22 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
         body: JSON.stringify(newEntries)
       });
     } catch (e) {
-      console.warn('Backend save skipped (static deployment)');
+      console.error('Failed to save to backend:', e);
     }
   };
 
   const syncFromZoho = async () => {
     setSyncing(true);
     try {
-      let res = await fetch('/api/zoho-sync').catch(() => null);
-      
-      let blob: Blob;
-      let filename = 'remote_sync.xlsx';
-      
-      if (!res || !res.ok) {
-        console.warn('Backend /api/zoho-sync failed, fetching remote sheet directly from browser...');
-        // Fallback to fetch directly from Google Sheets if we are on a static host like Vercel
-        const fetchUrl = (import.meta as any).env?.VITE_SHEET_SHARE_LINK || 'https://docs.google.com/spreadsheets/d/1mmXK5hc-ai48J9LvsPAXvCAGrvmLIG4kokpux8wk3D0/export?format=xlsx';
-        res = await fetch(fetchUrl);
-        if (!res.ok) {
-          throw new Error('Failed to fetch from remote sheet URL directly. Please check CORS and link permissions.');
-        }
-        blob = await res.blob();
-      } else {
-        filename = res.headers.get('x-filename') || filename;
-        blob = await res.blob();
+      const res = await fetch('/api/zoho-sync');
+      if (!res.ok) {
+        throw new Error(await res.text());
       }
       
+      const filename = res.headers.get('x-filename') || 'remote_sync.xlsx';
+      const blob = await res.blob();
       // create a file from the blob
-      const file = new File([blob], filename, { type: res?.headers?.get('content-type') || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const file = new File([blob], filename, { type: res.headers.get('content-type') || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
       const count = await loadExcel(file);
       if (count >= 0) {
         setToastMsg({ msg: `Successfully synced ${count} entries from Remote Sheet.`, type: 'success' });
@@ -107,6 +87,21 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
           const workbook = xlsx.read(data, { type: 'array' });
           const newEntries: TimeEntry[] = [];
           
+          const projectTypes: Record<string, string> = {};
+          
+          // First pass: look for main sheet to extract project types
+          const mainSheetName = workbook.SheetNames.find(n => n.toLowerCase().includes('main'));
+          if (mainSheetName) {
+            const msJson = xlsx.utils.sheet_to_json<any>(workbook.Sheets[mainSheetName], { raw: false });
+            msJson.forEach((row: any) => {
+               const pName = row['Project Name'] || row['project name'] || row['Project'] || row['project'];
+               const pType = row['Project Type'] || row['project type'] || row['Type'] || row['type'];
+               if (pName && pType) {
+                 projectTypes[pName.trim().toLowerCase()] = pType.trim();
+               }
+            });
+          }
+
           for (const sheetName of workbook.SheetNames) {
             if (sheetName.toLowerCase().includes('main') || sheetName.toLowerCase().includes('master')) continue;
             
@@ -141,10 +136,13 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
                 }
               }
 
+              const projName = getVal(['project name', 'project', 'proj', 'project id', 'proj id']) || 'Unknown';
+              
               newEntries.push({
                 date: dt,
                 employee: employeeName || 'Unknown Employee',
-                project: getVal(['project name', 'project', 'proj', 'project id', 'proj id']) || 'Unknown',
+                project: projName,
+                projectType: projectTypes[projName.toLowerCase()] || 'Unknown Type',
                 hours: parseFloat(getVal(['hours worked', 'hours', 'hrs', 'time']) || '8') || 8,
                 task: getVal(['task', 'description']) || 'Development',
                 status: getVal(['status', 'staus']) || 'Completed',
