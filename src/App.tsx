@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
-  BarChart3, Home, FolderOpen, Table, Users, FileText, Flag, UserCheck, Calendar, File as FileIcon, Upload
+  BarChart3, Home, FolderOpen, Table, Users, FileText, Flag, UserCheck, Calendar, File as FileIcon, RefreshCw, X, CheckCircle, AlertCircle
 } from 'lucide-react';
 import { useData } from './DataContext';
 import Overview from './Overview';
@@ -11,17 +11,13 @@ import Page6 from './Page6';
 
 export default function App() {
   const [page, setPage] = useState(0);
-  const { entries, loadExcel } = useData();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      loadExcel(e.target.files[0]).catch(err => alert('Error loading file'));
-    }
-  };
+  const { entries, syncFromZoho, syncing, toastMsg, setToastMsg } = useData();
 
   return (
     <div className="app">
+      {toastMsg && (
+        <Toast message={toastMsg.msg} type={toastMsg.type} onClose={() => setToastMsg(null)} />
+      )}
       <div className="sb">
         <div className="sb-logo">
           <BarChart3 className="text-[#93b8d8]" size={24} />
@@ -33,12 +29,31 @@ export default function App() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', margin: '0 20px 24px' }}>
           <button 
-            onClick={() => fileInputRef.current?.click()}
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', width: '100%', padding: '10px 14px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '14px', cursor: 'pointer', fontWeight: 600, backgroundColor: '#185FA5' }}
+            onClick={syncFromZoho}
+            disabled={syncing}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: '8px', 
+              width: '100%', 
+              padding: '12px 14px', 
+              background: '#ffffff', 
+              color: '#185FA5', 
+              border: '1px solid #e2e8f0', 
+              borderRadius: '8px', 
+              fontSize: '14px', 
+              cursor: syncing ? 'not-allowed' : 'pointer', 
+              fontWeight: 600, 
+              opacity: syncing ? 0.7 : 1,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseOver={e => { if(!syncing) e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor='#cbd5e1'; }}
+            onMouseOut={e => { if(!syncing) e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor='#e2e8f0'; }}
           >
-            <Upload size={16} /> Upload CSV/Excel
+            <RefreshCw size={18} className={syncing ? 'animate-spin' : ''} /> {syncing ? 'Syncing...' : 'Sync Remote Sheet'}
           </button>
-          <input type="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" style={{ display: 'none' }} ref={fileInputRef} onChange={handleFileUpload} />
         </div>
 
         <div className="sb-nav">
@@ -75,6 +90,44 @@ function NavItem({ icon, text, active, onClick }: { icon: React.ReactNode, text:
   return (
     <div className={`ni ${active ? 'on' : ''}`} onClick={onClick}>
       {icon} {text}
+    </div>
+  );
+}
+
+function Toast({ message, type, onClose }: { message: string, type: 'success' | 'error', onClose: () => void }) {
+  React.useEffect(() => {
+    const timer = setTimeout(onClose, 5000);
+    return () => clearTimeout(timer);
+  }, [message, type, onClose]);
+
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: '24px',
+      left: '24px',
+      zIndex: 9999,
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      padding: '16px 20px',
+      borderRadius: '8px',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+      backgroundColor: type === 'success' ? '#ECFDF5' : '#FEF2F2',
+      color: type === 'success' ? '#065F46' : '#991B1B',
+      borderLeft: `4px solid ${type === 'success' ? '#10B981' : '#EF4444'}`,
+      fontWeight: 500,
+      fontSize: '14px',
+      maxWidth: '350px'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', flex: 1, gap: '12px' }}>
+        <div style={{ marginTop: '2px' }}>
+          {type === 'success' ? <CheckCircle size={20} color="#10B981" /> : <AlertCircle size={20} color="#EF4444" />}
+        </div>
+        <span style={{ wordBreak: 'break-word', lineHeight: 1.4 }}>{message}</span>
+      </div>
+      <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignSelf: 'flex-start' }}>
+        <X size={16} color={type === 'success' ? '#065F46' : '#991B1B'} />
+      </button>
     </div>
   );
 }

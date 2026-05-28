@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UserCheck, Users } from 'lucide-react';
 import { useData } from './DataContext';
 import { filterEntries, computeTotalHrs, getColor, getUniqueMonths } from './utils';
+import FilterSelect from './FilterSelect';
 
 export default function Page6() {
   const { entries } = useData();
@@ -22,13 +23,10 @@ export default function Page6() {
           <Users size={20} className="text-slate-500 shrink-0" />
           <span className="ctitle-name">Employee project breakdown</span>
           <div className="cf">
-            <label>Month</label><select className="fsel" value={month} onChange={e=>setMonth(e.target.value)}><option value="all">All</option>{uniqueMonths.map(m=><option key={m} value={m}>{m}</option>)}</select>
+            <label>Month</label><FilterSelect value={month} onChange={setMonth} options={[{value:'all',label:'All'}, ...uniqueMonths.map(m=>({value:m,label:m}))]} />
             <div className="fsep"></div>
             <label>Project</label>
-            <select className="fsel" value={projFilter} onChange={e => setProjFilter(e.target.value)}>
-              <option value="all">All</option>
-              {[...new Set(entries.map(x=>x.project))].map(x=><option key={x} value={x}>{x}</option>)}
-            </select>
+            <FilterSelect value={projFilter} onChange={setProjFilter} options={[{value:'all',label:'All'}, ...[...new Set(entries.map(x=>x.project))].map(x=>({value:x,label:x}))]} />
           </div>
         </div>
         <div style={{ overflowY: 'auto', maxHeight: '500px' }}>

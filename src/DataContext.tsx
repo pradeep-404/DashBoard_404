@@ -5,8 +5,12 @@ import * as xlsx from 'xlsx';
 interface DataContextType {
   entries: TimeEntry[];
   setEntries: (e: TimeEntry[]) => void;
-  loadExcel: (file: File) => Promise<void>;
+  loadExcel: (file: File) => Promise<number>;
+  syncFromZoho: () => Promise<void>;
   loading: boolean;
+  syncing: boolean;
+  toastMsg: { msg: string, type: 'success' | 'error' } | null;
+  setToastMsg: (t: { msg: string, type: 'success' | 'error' } | null) => void;
 }
 
 const DataContext = createContext<DataContextType | null>(null);
@@ -20,6 +24,8 @@ export const useData = () => {
 export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }) => {
   const [entries, setEntries] = useState<TimeEntry[]>(INITIAL_ENTRIES);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
+  const [toastMsg, setToastMsg] = useState<{ msg: string, type: 'success' | 'error' } | null>(null);
 
   React.useEffect(() => {
     fetch('/api/entries')
@@ -48,8 +54,32 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
     }
   };
 
-  const loadExcel = async (file: File) => {
-    return new Promise<void>((resolve, reject) => {
+  const syncFromZoho = async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch('/api/zoho-sync');
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+      
+      const filename = res.headers.get('x-filename') || 'remote_sync.xlsx';
+      const blob = await res.blob();
+      // create a file from the blob
+      const file = new File([blob], filename, { type: res.headers.get('content-type') || "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      const count = await loadExcel(file);
+      if (count >= 0) {
+        setToastMsg({ msg: `Successfully synced ${count} entries from Remote Sheet.`, type: 'success' });
+      }
+    } catch (e: any) {
+      console.error(e);
+      setToastMsg({ msg: `Failed to sync: ${e.message || 'Unknown error'}`, type: 'error' });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  const loadExcel = async (file: File): Promise<number> => {
+    return new Promise<number>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
@@ -72,7 +102,7 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
                 return undefined;
               };
 
-              let dateStr = getVal(['date']);
+              let dateStr = getVal(['date', 'data']);
               if (!dateStr) return; // skip rows without dates
               
               let parsedDate = new Date(dateStr);
@@ -81,14 +111,24 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
                 dt = parsedDate.toISOString().split('T')[0];
               }
 
+              let employeeName = getVal(['employee', 'employee name', 'name', 'emp name']);
+              if (!employeeName) {
+                if (file.name.toLowerCase().startsWith('timesheet_')) {
+                  employeeName = file.name.replace(/^timesheet_/i, '').replace(/\.(csv|xlsx)$/i, '');
+                  employeeName = employeeName.charAt(0).toUpperCase() + employeeName.slice(1);
+                } else {
+                  employeeName = sheetName === 'Sheet1' ? getVal(['employee id', 'emp id', 'emp']) || 'Unknown Employee' : sheetName;
+                }
+              }
+
               newEntries.push({
                 date: dt,
-                employee: getVal(['employee', 'employee name', 'name', 'emp']) || sheetName,
-                project: getVal(['project name', 'project', 'proj']) || getVal(['project id', 'proj id']) || 'Unknown',
+                employee: employeeName || 'Unknown Employee',
+                project: getVal(['project name', 'project', 'proj', 'project id', 'proj id']) || 'Unknown',
                 hours: parseFloat(getVal(['hours worked', 'hours', 'hrs', 'time']) || '8') || 8,
                 task: getVal(['task', 'description']) || 'Development',
-                status: getVal(['status']) || 'Completed',
-                remarks: getVal(['remarks', 'notes']) || ''
+                status: getVal(['status', 'staus']) || 'Completed',
+                remarks: getVal(['remarks', 'notes', 'remake']) || ''
               });
             });
           }
@@ -97,9 +137,9 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
             setEntries(newEntries);
             await saveEntriesToBackend(newEntries);
           } else {
-            alert("No valid timesheet entries found in the uploaded file.");
+            setToastMsg({ msg: "Warning: Wrong format! Please ensure your Excel file contains at minimum a 'Date' column.", type: 'error' });
           }
-          resolve();
+          resolve(newEntries.length);
         } catch (err) {
           reject(err);
         }
@@ -110,7 +150,7 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
   };
 
   return (
-    <DataContext.Provider value={{ entries, setEntries, loadExcel, loading }}>
+    <DataContext.Provider value={{ entries, setEntries, loadExcel, syncFromZoho, loading, syncing, toastMsg, setToastMsg }}>
       {children}
     </DataContext.Provider>
   );

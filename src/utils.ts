@@ -17,18 +17,51 @@ export function getUniqueMonths(entries: TimeEntry[]) {
   return Array.from(months).sort().reverse();
 }
 
+export function getCalendarWeekStart(dateStr: string) {
+  const [yy, mm, dd] = dateStr.split('-').map(Number);
+  const d = new Date(yy, mm - 1, dd);
+  const day = d.getDay();
+  // getDay() gives 0 for Sun, 1 for Mon. We want Monday as start.
+  const diffToMonday = d.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(d);
+  monday.setDate(diffToMonday);
+  monday.setHours(0, 0, 0, 0);
+  // Ensure we format as YYYY-MM-DD in local time
+  const year = monday.getFullYear();
+  const month = String(monday.getMonth() + 1).padStart(2, '0');
+  const date = String(monday.getDate()).padStart(2, '0');
+  return `${year}-${month}-${date}`;
+}
+
+export function formatWeek(mondayStr: string) {
+  if (mondayStr === 'all') return 'All Weeks';
+  // Use parsing without timezone shifting
+  const [yy, mm, dd] = mondayStr.split('-').map(Number);
+  const m = new Date(yy, mm - 1, dd);
+  const s = new Date(yy, mm - 1, dd + 6);
+  const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+  return `${m.toLocaleDateString('en-US', options)} - ${s.toLocaleDateString('en-US', options)}`;
+}
+
 export function getWeekFromDate(dateStr: string) {
-  const day = parseInt(dateStr.split('-')[2] || '1', 10);
-  if (day <= 7) return '1';
-  if (day <= 14) return '2';
-  if (day <= 21) return '3';
-  return '4';
+  return getCalendarWeekStart(dateStr);
+}
+
+export function getUniqueWeeks(entries: TimeEntry[]) {
+  const weeks = new Set<string>();
+  entries.forEach(e => weeks.add(getWeekFromDate(e.date)));
+  return Array.from(weeks).sort();
 }
 
 export function filterEntries(entries: TimeEntry[], month: string, week: string, emp: string = 'all', proj: string = 'all') {
   return entries.filter(e => {
-    if (month !== 'all' && getMonthFromDate(e.date) !== month) return false;
-    if (week !== 'all' && getWeekFromDate(e.date) !== week) return false;
+    // If specific week is selected, ignore the month filter to show the complete overlapping week
+    if (week !== 'all') {
+      if (getWeekFromDate(e.date) !== week) return false;
+    } else {
+      if (month !== 'all' && getMonthFromDate(e.date) !== month) return false;
+    }
+    
     if (emp !== 'all' && e.employee !== emp) return false;
     if (proj !== 'all' && e.project !== proj) return false;
     return true;
@@ -85,7 +118,7 @@ export function computeMissingTimesheets(entries: TimeEntry[], month: string) {
   emps.forEach(emp => { grouped[emp] = {}; });
 
   filtered.forEach(e => {
-    const w = `${getMonthFromDate(e.date).toUpperCase()} W${getWeekFromDate(e.date)}`;
+    const w = formatWeek(getWeekFromDate(e.date));
     if (!grouped[e.employee][w]) grouped[e.employee][w] = { hrs: 0, proj: e.project };
     grouped[e.employee][w].hrs += e.hours;
     if (!grouped[e.employee][w].proj.includes(e.project)) {
@@ -100,7 +133,7 @@ export function computeMissingTimesheets(entries: TimeEntry[], month: string) {
      
      missingDays.forEach(d => {
         if (month !== 'all' && getMonthFromDate(d) !== month) return;
-        const w = `${getMonthFromDate(d).toUpperCase()} W${getWeekFromDate(d)}`;
+        const w = formatWeek(getWeekFromDate(d));
         if (!missingByWeek[w]) missingByWeek[w] = [];
         missingByWeek[w].push(d);
      });

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Users, BarChart3, FileText, ListIcon, Download, Flag, UserCheck, Grid } from 'lucide-react';
 import { useData } from './DataContext';
 import { filterEntries, computeEmployeeHrs, getColor, computeMissingTimesheets, getUniqueMonths } from './utils';
+import FilterSelect from './FilterSelect';
 
 export function Page3() {
   const { entries } = useData();
@@ -17,7 +18,7 @@ export function Page3() {
       <div className="pgtitle"><Users size={24} className="text-[#185FA5]" />Employee hours</div>
       <div className="card">
         <div className="ctitle"><BarChart3 size={20} className="text-slate-500 shrink-0" /><span className="ctitle-name">Total hours per employee</span>
-        <div className="cf"><label>Month</label><select className="fsel" value={month} onChange={e=>setMonth(e.target.value)}><option value="all">All</option>{uniqueMonths.map(m=><option key={m} value={m}>{m}</option>)}</select></div>
+        <div className="cf"><label>Month</label><FilterSelect value={month} onChange={setMonth} options={[{value:'all',label:'All'}, ...uniqueMonths.map(m=>({value:m,label:m}))]} /></div>
         </div>
         <div className="hbars">
           {empMap.map((e, i) => (
@@ -55,11 +56,11 @@ export function Page4() {
           <ListIcon size={20} className="text-slate-500 shrink-0" />
           <span className="ctitle-name">All entries</span>
           <div className="cf">
-            <label>Month</label><select className="fsel" value={month} onChange={e=>{setMonth(e.target.value); setPg(0);}}><option value="all">All</option>{uniqueMonths.map(m=><option key={m} value={m}>{m}</option>)}</select>
+            <label>Month</label><FilterSelect value={month} onChange={v=>{setMonth(v); setPg(0);}} options={[{value:'all',label:'All'}, ...uniqueMonths.map(m=>({value:m,label:m}))]} />
             <div className="fsep"></div>
-            <label>Employee</label><select className="fsel" value={emp} onChange={e=>{setEmp(e.target.value); setPg(0);}}><option value="all">All</option>{[...new Set(entries.map(x=>x.employee))].map(x=><option key={x} value={x}>{x}</option>)}</select>
+            <label>Employee</label><FilterSelect value={emp} onChange={v=>{setEmp(v); setPg(0);}} options={[{value:'all',label:'All'}, ...[...new Set(entries.map(x=>x.employee))].map(x=>({value:x,label:x}))]} />
             <div className="fsep"></div>
-            <label>Project</label><select className="fsel" value={proj} onChange={e=>{setProj(e.target.value); setPg(0);}}><option value="all">All</option>{[...new Set(entries.map(x=>x.project))].map(x=><option key={x} value={x}>{x}</option>)}</select>
+            <label>Project</label><FilterSelect value={proj} onChange={v=>{setProj(v); setPg(0);}} options={[{value:'all',label:'All'}, ...[...new Set(entries.map(x=>x.project))].map(x=>({value:x,label:x}))]} />
           </div>
         </div>
         <div style={{overflowX: 'auto'}}>
@@ -100,6 +101,7 @@ export function Page5() {
   const { entries } = useData();
   const [month, setMonth] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [empFilter, setEmpFilter] = useState('all');
   const [pg, setPg] = useState(0);
   const perPage = 20;
 
@@ -108,6 +110,9 @@ export function Page5() {
   
   if (statusFilter !== 'all') {
       missData = missData.filter(m => m.flag === statusFilter);
+  }
+  if (empFilter !== 'all') {
+      missData = missData.filter(m => m.emp === empFilter);
   }
   
   const totalItems = missData.length;
@@ -122,17 +127,13 @@ export function Page5() {
           <span className="ctitle-name text-[#A32D2D]">Problem entries — Missing Days & Under 35 hours/week</span>
           <div className="cf">
             <label>Month</label>
-            <select className="fsel" value={month} onChange={e=>{setMonth(e.target.value); setPg(0);}}>
-                <option value="all">All</option>
-                {uniqueMonths.map(m=><option key={m} value={m}>{m}</option>)}
-            </select>
+            <FilterSelect value={month} onChange={v=>{setMonth(v); setPg(0);}} options={[{value:'all',label:'All'}, ...uniqueMonths.map(m=>({value:m,label:m}))]} />
+            <div className="fsep"></div>
+            <label>Employee</label>
+            <FilterSelect value={empFilter} onChange={v=>{setEmpFilter(v); setPg(0);}} options={[{value:'all',label:'All'}, ...[...new Set(entries.map(x=>x.employee))].map(e=>({value:e,label:e}))]} />
             <div className="fsep"></div>
             <label>Status</label>
-            <select className="fsel" value={statusFilter} onChange={e=>{setStatusFilter(e.target.value); setPg(0);}}>
-                <option value="all">All</option>
-                <option value="Missing Entry">Missing Entry</option>
-                <option value="Under Hours">Under Hours</option>
-            </select>
+            <FilterSelect value={statusFilter} onChange={v=>{setStatusFilter(v); setPg(0);}} options={[{value:'all',label:'All'}, {value:'Missing Entry',label:'Missing Entry'}, {value:'Under Hours',label:'Under Hours'}]} />
           </div>
         </div>
         <div style={{overflowX: 'auto'}}>

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { LayoutDashboard, BarChart3, PieChart, TrendingUp, Flag } from 'lucide-react';
 import { useData } from './DataContext';
-import { filterEntries, computeTotalHrs, computeProjectHrs, computeEmployeeHrs, getColor, computeMissingTimesheets, getUniqueMonths } from './utils';
+import { filterEntries, computeTotalHrs, computeProjectHrs, computeEmployeeHrs, getColor, computeMissingTimesheets, getUniqueMonths, getUniqueWeeks, formatWeek } from './utils';
+import FilterSelect from './FilterSelect';
 
 export default function Overview() {
   const { entries } = useData();
@@ -11,10 +12,18 @@ export default function Overview() {
   const [trendMonth, setTrendMonth] = useState('all');
 
   const uniqueMonths = getUniqueMonths(entries);
+  
+  // Filter available weeks based on selected month
+  const availableWeeks = getUniqueWeeks(month === 'all' ? entries : filterEntries(entries, month, 'all'));
+
+  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setMonth(e.target.value);
+    setWeek('all');
+  };
 
   const filtered = filterEntries(entries, month, week);
   const totalHrs = computeTotalHrs(filtered);
-  const wks = month === 'all' && week === 'all' ? 8 : (week === 'all' ? 4 : 1);
+  const wks = week === 'all' ? availableWeeks.length || 1 : 1;
   const avgHrs = Math.round(totalHrs / wks);
   
   const projHrs = computeProjectHrs(filtered);
@@ -46,16 +55,26 @@ export default function Overview() {
             <BarChart3 size={20} className="text-slate-500 shrink-0" />
             <span className="ctitle-name">Working hours by project</span>
             <div className="cf">
+              <label>Project</label>
+              <FilterSelect 
+                value={'all'} 
+                onChange={()=>{}} 
+                options={[{value: 'all', label: 'All'}, ...[...new Set(entries.map(e => e.project))].map(p => ({value: p, label: p}))]} 
+              />
+              <div className="fsep"></div>
               <label>Month</label>
-              <select className="fsel" value={month} onChange={e => setMonth(e.target.value)}>
-                <option value="all">All</option>
-                {uniqueMonths.map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
+              <FilterSelect 
+                value={month} 
+                onChange={val => { setMonth(val); setWeek('all'); }} 
+                options={[{value: 'all', label: 'All'}, ...uniqueMonths.map(m => ({value: m, label: m}))]} 
+              />
               <div className="fsep"></div>
               <label>Week</label>
-              <select className="fsel" value={week} onChange={e => setWeek(e.target.value)}>
-                <option value="all">All</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
-              </select>
+              <FilterSelect 
+                value={week} 
+                onChange={setWeek} 
+                options={[{value: 'all', label: 'All'}, ...availableWeeks.map(w => ({value: w, label: formatWeek(w)}))]} 
+              />
             </div>
           </div>
           <div className="hbars">
@@ -76,25 +95,54 @@ export default function Overview() {
               <span className="ctitle-name">Project hours</span>
               <div className="cf">
                 <label>Employee</label>
-                <select className="fsel" value={donutEmp} onChange={e => setDonutEmp(e.target.value)}>
-                  <option value="all">All</option>
-                  {[...new Set(entries.map(e => e.employee))].map(e => <option key={e} value={e}>{e}</option>)}
-                </select>
+                <FilterSelect 
+                  value={donutEmp} 
+                  onChange={setDonutEmp} 
+                  options={[{value: 'all', label: 'All'}, ...[...new Set(entries.map(e => e.employee))].map(e => ({value: e, label: e}))]} 
+                />
               </div>
             </div>
             <div className="donut-row">
               <svg width="120" height="120" viewBox="0 0 120 120">
                 <circle cx="60" cy="60" r="40" fill="none" stroke="var(--color-background-secondary)" strokeWidth="18" />
-                {donutMap.map((p, i) => {
-                  const dash = (p.hrs / donutTotal) * C;
-                  const el = <circle key={p.name} cx="60" cy="60" r="40" fill="none" stroke={getColor(i)} strokeWidth="18" strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-off} />;
-                  off += dash;
-                  return el;
-                })}
-                <text x="60" y="66" textAnchor="middle" fontSize="16" fontWeight="600" fill="var(--color-text-primary)">{donutTotal}h</text>
+                {(() => {
+                  const slices: {name: string, hrs: number, idx: number}[] = [];
+                  let otherHrs = 0;
+                  donutMap.forEach((p, i) => {
+                    if ((p.hrs / donutTotal) < 0.05) {
+                      otherHrs += p.hrs;
+                    } else {
+                      slices.push({ ...p, idx: i });
+                    }
+                  });
+                  if (otherHrs > 0) slices.push({ name: 'Other', hrs: otherHrs, idx: donutMap.length });
+
+                  let currentOff = 0;
+                  return slices.map((p) => {
+                    const dash = (p.hrs / donutTotal) * C;
+                    const sliceOff = currentOff;
+                    currentOff += dash;
+                    const pct = Math.round((p.hrs / donutTotal) * 100) + '%';
+                    return (
+                      <g key={p.name}>
+                        <circle cx="60" cy="60" r="40" fill="none" stroke={getColor(p.idx)} strokeWidth="18" strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-sliceOff} />
+                        {(p.hrs / donutTotal) > 0.03 && (
+                          <text
+                            x={60 + 30 * Math.cos(2 * Math.PI * ((sliceOff + dash / 2) / C) - Math.PI / 2)}
+                            y={60 + 30 * Math.sin(2 * Math.PI * ((sliceOff + dash / 2) / C) - Math.PI / 2)}
+                            textAnchor="middle" dominantBaseline="central" fontSize="10" fill="#fff" fontWeight="bold" pointerEvents="none"
+                          >
+                            {pct}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  });
+                })()}
+                <text x="60" y="62" textAnchor="middle" dominantBaseline="central" fontSize="14" fontWeight="600" fill="var(--color-text-primary)">{donutTotal}h</text>
               </svg>
-              <div className="leg">
-                {donutMap.slice(0, 5).map((p, i) => (
+              <div className="leg" style={{ maxHeight: '120px', overflowY: 'auto', paddingRight: '4px' }}>
+                {donutMap.map((p, i) => (
                   <div className="li" key={p.name}>
                     <div className="li-dot" style={{ background: getColor(i) }}></div>
                     <span style={{flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80px'}}>{p.name}</span>
@@ -110,15 +158,17 @@ export default function Overview() {
               <span className="ctitle-name">Weekly trend</span>
               <div className="cf">
                 <label>Month</label>
-                <select className="fsel" value={trendMonth} onChange={e => setTrendMonth(e.target.value)}>
-                  <option value="all">All</option>
-                  {uniqueMonths.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
+                <FilterSelect 
+                  value={trendMonth} 
+                  onChange={setTrendMonth} 
+                  options={[{value: 'all', label: 'All'}, ...uniqueMonths.map(m => ({value: m, label: m}))]} 
+                />
               </div>
             </div>
             {/* Dynamic Trend Chart */}
             {(() => {
-                const wks = ['1', '2', '3', '4'];
+                const trendAvailableWeeks = getUniqueWeeks(trendMonth === 'all' ? entries : filterEntries(entries, trendMonth, 'all'));
+                const wks = trendAvailableWeeks.length > 5 ? trendAvailableWeeks.slice(-5) : trendAvailableWeeks;
                 const trendData = wks.map(wk => {
                     const kwEntries = filterEntries(entries, trendMonth, wk);
                     return computeTotalHrs(kwEntries);
@@ -135,27 +185,35 @@ export default function Overview() {
                             ))}
                         </div>
                         <div className="xlabels">
-                            {wks.map(w => <div key={w} className="xl">Wk {w}</div>)}
+                            {wks.map(w => {
+                                const parseDate = new Date(w);
+                                return <div key={w} className="xl">{parseDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</div>;
+                            })}
                         </div>
                     </>
                 );
             })()}
           </div>
+          <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div className="ctitle"><Flag size={20} className="text-[#A32D2D] shrink-0" /><span className="ctitle-name text-[#A32D2D]">Latest missing / under-hours flags</span></div>
+            <div style={{ overflowY: 'auto', maxHeight: '180px' }}>
+              <table className="tbl">
+                <thead><tr><th>Employee</th><th>Week</th><th>Project</th><th>Hours</th><th>Status</th></tr></thead>
+                <tbody>
+                  {missData.slice(0, Math.max(3, problemCount)).map((r, i) => (
+                    <tr key={i}>
+                      <td>{r.emp}</td><td>{r.week}</td><td>{r.proj}</td><td>{r.hrs}</td>
+                      <td><span className={`badge b-org`}>Under Hours</span></td>
+                    </tr>
+                  ))}
+                  {missData.length === 0 && (
+                    <tr><td colSpan={5} style={{ textAlign: 'center', padding: '20px', color: 'var(--color-text-secondary)' }}>No problem entries</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      </div>
-      <div className="card">
-        <div className="ctitle"><Flag size={20} className="text-[#A32D2D] shrink-0" /><span className="ctitle-name text-[#A32D2D]">Latest missing / under-hours flags</span></div>
-        <table className="tbl">
-          <thead><tr><th>Employee</th><th>Week</th><th>Project</th><th>Hours</th><th>Status</th></tr></thead>
-          <tbody>
-            {missData.slice(0, 3).map((r, i) => (
-              <tr key={i}>
-                <td>{r.emp}</td><td>{r.week}</td><td>{r.proj}</td><td>{r.hrs}</td>
-                <td><span className={`badge b-org`}>Under Hours</span></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
     </div>
   );

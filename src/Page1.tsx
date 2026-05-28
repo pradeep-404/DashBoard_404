@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { FolderOpen, BarChart3, Grid } from 'lucide-react';
 import { useData } from './DataContext';
-import { filterEntries, computeProjectHrs, getMonthFromDate, getWeekFromDate, getColor, getUniqueMonths } from './utils';
+import { filterEntries, computeProjectHrs, getWeekFromDate, getColor, getUniqueMonths, getUniqueWeeks } from './utils';
+
+import FilterSelect from './FilterSelect';
 
 export default function Page1() {
   const { entries } = useData();
@@ -15,18 +17,16 @@ export default function Page1() {
   const totalProjs = projMap.length;
   const slice = projMap.slice(pg * perPage, (pg + 1) * perPage);
 
+  const uniqueWeeks = getUniqueWeeks(filtered);
+
   // Heatmap grouping
-  // proj -> [w1 hrs, w2 hrs, w3 hrs, w4 hrs]
+  // proj -> [w1 hrs, w2 hrs... dynamically based on uniqueWeeks]
   const heatMapData = slice.map(p => {
     const projEntries = filtered.filter(e => e.project === p.name);
-    const weeks = [0, 0, 0, 0];
-    projEntries.forEach(e => {
-        const wk = parseInt(getWeekFromDate(e.date), 10) - 1;
-        if (wk >= 0 && wk < 4) {
-            weeks[wk] += e.hours;
-        }
+    const weeksList = uniqueWeeks.map(wStr => {
+        return projEntries.filter(e => getWeekFromDate(e.date) === wStr).reduce((s, e) => s + e.hours, 0);
     });
-    return { name: p.name, total: p.hrs, weeks };
+    return { name: p.name, total: p.hrs, weeks: weeksList };
   });
 
   return (
@@ -38,19 +38,28 @@ export default function Page1() {
           <span className="ctitle-name">Heatmap — project × week</span>
           <div className="cf">
             <label>Month</label>
-            <select className="fsel" value={month} onChange={e => {setMonth(e.target.value); setPg(0);}}>
-              <option value="all">All</option>
-              {uniqueMonths.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
+            <FilterSelect 
+              value={month} 
+              onChange={val => {setMonth(val); setPg(0);}} 
+              options={[{value: 'all', label: 'All'}, ...uniqueMonths.map(m => ({value: m, label: m}))]} 
+            />
           </div>
         </div>
-        <div className="heat-wrap">
-          <table className="heat-tbl" style={{ width: '100%', fontSize: '11px' }}>
+        <div className="heat-wrap" style={{ overflowX: 'auto' }}>
+          <table className="heat-tbl" style={{ width: '100%', fontSize: '11px', minWidth: '400px' }}>
             <thead>
-              <tr><th style={{ textAlign: 'left', paddingBottom: '6px' }}>Project</th><th>Wk 1</th><th>Wk 2</th><th>Wk 3</th><th>Wk 4</th><th>Total</th></tr>
+              <tr>
+                <th style={{ textAlign: 'left', paddingBottom: '6px' }}>Project</th>
+                {uniqueWeeks.map((wStr, i) => (
+                  <th key={wStr} style={{ paddingBottom: '6px' }}>
+                    Wk {new Date(wStr).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                  </th>
+                ))}
+                <th style={{ paddingBottom: '6px' }}>Total</th>
+              </tr>
             </thead>
             <tbody>
-              {heatMapData.map((row, i) => (
+              {heatMapData.map((row) => (
                   <tr key={row.name}>
                       <td style={{ padding: '6px 4px', fontWeight: 500, color: 'var(--color-text-primary)' }}>{row.name}</td>
                       {row.weeks.map((w, j) => (
@@ -59,14 +68,14 @@ export default function Page1() {
                                   background: w === 0 ? 'var(--color-background-secondary)' : `rgba(24, 95, 165, ${Math.max(0.2, w / 40)})`, 
                                   color: w > 20 ? '#fff' : 'var(--color-text-primary)' 
                               }}>
-                                  {w}h
+                                  {w > 0 ? `${w}h` : '—'}
                               </span>
                           </td>
                       ))}
                       <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{row.total}h</td>
                   </tr>
               ))}
-              {heatMapData.length === 0 && <tr><td colSpan={6} style={{textAlign: 'center', padding: '10px'}}>No data</td></tr>}
+              {heatMapData.length === 0 && <tr><td colSpan={uniqueWeeks.length + 2} style={{textAlign: 'center', padding: '10px'}}>No data</td></tr>}
             </tbody>
           </table>
         </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Table, Grid } from 'lucide-react';
 import { useData } from './DataContext';
 import { filterEntries, computeEmployeeHrs, computeProjectHrs, getUniqueMonths } from './utils';
+import FilterSelect from './FilterSelect';
 
 export default function Page2() {
   const { entries } = useData();
@@ -35,10 +36,11 @@ export default function Page2() {
           <span className="ctitle-name">Hours heatmap — employee × project (Top 6 projects)</span>
           <div className="cf">
             <label>Month</label>
-            <select className="fsel" value={month} onChange={e => setMonth(e.target.value)}>
-                <option value="all">All</option>
-                {uniqueMonths.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
+            <FilterSelect 
+              value={month} 
+              onChange={setMonth} 
+              options={[{value: 'all', label: 'All'}, ...uniqueMonths.map(m => ({value: m, label: m}))]} 
+            />
           </div>
         </div>
         <div className="heat-wrap">
