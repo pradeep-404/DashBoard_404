@@ -50,7 +50,7 @@ export default function Overview() {
         <div className="kcard red"><div className="kl">🚩 Problem entries</div><div className="kv">{problemCount}</div><div className="ks">Under hours</div></div>
       </div>
       <div className="row2">
-        <div className="card">
+        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
           <div className="ctitle">
             <BarChart3 size={20} className="text-slate-500 shrink-0" />
             <span className="ctitle-name">Working hours by project</span>
@@ -77,7 +77,7 @@ export default function Overview() {
               />
             </div>
           </div>
-          <div className="hbars">
+          <div className="hbars" style={{ overflowY: 'auto', flex: 1, paddingRight: '8px' }}>
             {projHrs.map((p, i) => (
               <div className="hbrow" key={p.name}>
                 <span className="hblabel">{p.name}</span>
@@ -88,7 +88,7 @@ export default function Overview() {
             ))}
           </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', minHeight: 0 }}>
           <div className="card">
             <div className="ctitle">
               <PieChart size={20} className="text-slate-500 shrink-0" />
@@ -194,13 +194,13 @@ export default function Overview() {
                 );
             })()}
           </div>
-          <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <div className="ctitle"><Flag size={20} className="text-[#A32D2D] shrink-0" /><span className="ctitle-name text-[#A32D2D]">Latest missing / under-hours flags</span></div>
-            <div style={{ overflowY: 'auto', maxHeight: '180px' }}>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
               <table className="tbl">
                 <thead><tr><th>Employee</th><th>Week</th><th>Project</th><th>Hours</th><th>Status</th></tr></thead>
                 <tbody>
-                  {missData.slice(0, Math.max(3, problemCount)).map((r, i) => (
+                  {missData.map((r, i) => (
                     <tr key={i}>
                       <td>{r.emp}</td><td>{r.week}</td><td>{r.proj}</td><td>{r.hrs}</td>
                       <td><span className={`badge b-org`}>Under Hours</span></td>
