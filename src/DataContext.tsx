@@ -73,7 +73,7 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
       if (!res || !res.ok) {
         console.warn('Backend /api/zoho-sync failed, fetching remote sheet directly from browser...');
         // Fallback to fetch directly from Google Sheets if we are on a static host like Vercel
-        const fetchUrl = import.meta.env.VITE_SHEET_SHARE_LINK || 'https://docs.google.com/spreadsheets/d/1mmXK5hc-ai48J9LvsPAXvCAGrvmLIG4kokpux8wk3D0/export?format=xlsx';
+        const fetchUrl = (import.meta as any).env?.VITE_SHEET_SHARE_LINK || 'https://docs.google.com/spreadsheets/d/1mmXK5hc-ai48J9LvsPAXvCAGrvmLIG4kokpux8wk3D0/export?format=xlsx';
         res = await fetch(fetchUrl);
         if (!res.ok) {
           throw new Error('Failed to fetch from remote sheet URL directly. Please check CORS and link permissions.');

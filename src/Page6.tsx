@@ -26,7 +26,7 @@ export default function Page6() {
             <label>Month</label><FilterSelect value={month} onChange={setMonth} options={[{value:'all',label:'All'}, ...uniqueMonths.map(m=>({value:m,label:m}))]} />
             <div className="fsep"></div>
             <label>Project</label>
-            <FilterSelect value={projFilter} onChange={setProjFilter} options={[{value:'all',label:'All'}, ...[...new Set(entries.map(x=>x.project))].map(x=>({value:x,label:x}))]} />
+            <FilterSelect value={projFilter} onChange={setProjFilter} options={[{value:'all',label:'All'}, ...(Array.from(new Set(entries.map(e => e.project))) as string[]).map(x=>({value:x,label:x}))]} />
           </div>
         </div>
         <div style={{ overflowY: 'auto', maxHeight: '500px' }}>

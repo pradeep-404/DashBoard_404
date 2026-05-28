@@ -49,8 +49,8 @@ export default function Overview() {
         <div className="kcard"><div className="kl">Active projects</div><div className="kv">{activeProjs}</div><div className="ks">Running</div></div>
         <div className="kcard red"><div className="kl">🚩 Problem entries</div><div className="kv">{problemCount}</div><div className="ks">Under hours</div></div>
       </div>
-      <div className="row2">
-        <div className="card">
+      <div className="row2" style={{ flex: 1, minHeight: 0 }}>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', minHeight: 0, paddingRight: '12px', paddingBottom: '12px' }}>
           <div className="ctitle">
             <BarChart3 size={20} className="text-slate-500 shrink-0" />
             <span className="ctitle-name">Working hours by project</span>
@@ -59,7 +59,7 @@ export default function Overview() {
               <FilterSelect 
                 value={'all'} 
                 onChange={()=>{}} 
-                options={[{value: 'all', label: 'All'}, ...[...new Set(entries.map(e => e.project))].map(p => ({value: p, label: p}))]} 
+                options={[{value: 'all', label: 'All'}, ...(Array.from(new Set(entries.map(e => (e as any).project || e.project))) as string[]).map(p => ({value: p, label: p}))]} 
               />
               <div className="fsep"></div>
               <label>Month</label>
@@ -77,7 +77,7 @@ export default function Overview() {
               />
             </div>
           </div>
-          <div className="hbars">
+          <div className="hbars" style={{ overflowY: 'auto', flex: 1, paddingRight: '8px' }}>
             {projHrs.map((p, i) => (
               <div className="hbrow" key={p.name}>
                 <span className="hblabel">{p.name}</span>
@@ -88,9 +88,9 @@ export default function Overview() {
             ))}
           </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '9px' }}>
-          <div className="card">
-            <div className="ctitle">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', minHeight: 0 }}>
+          <div className="card" style={{ padding: '20px' }}>
+            <div className="ctitle" style={{ marginBottom: '12px', paddingBottom: '8px' }}>
               <PieChart size={20} className="text-slate-500 shrink-0" />
               <span className="ctitle-name">Project hours</span>
               <div className="cf">
@@ -98,11 +98,11 @@ export default function Overview() {
                 <FilterSelect 
                   value={donutEmp} 
                   onChange={setDonutEmp} 
-                  options={[{value: 'all', label: 'All'}, ...[...new Set(entries.map(e => e.employee))].map(e => ({value: e, label: e}))]} 
+                  options={[{value: 'all', label: 'All'}, ...(Array.from(new Set(entries.map(e => e.employee))) as string[]).map(e => ({value: e, label: e}))]} 
                 />
               </div>
             </div>
-            <div className="donut-row">
+            <div className="donut-row" style={{ marginTop: '0' }}>
               <svg width="120" height="120" viewBox="0 0 120 120">
                 <circle cx="60" cy="60" r="40" fill="none" stroke="var(--color-background-secondary)" strokeWidth="18" />
                 {(() => {
@@ -194,9 +194,9 @@ export default function Overview() {
                 );
             })()}
           </div>
-          <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <div className="ctitle"><Flag size={20} className="text-[#A32D2D] shrink-0" /><span className="ctitle-name text-[#A32D2D]">Latest missing / under-hours flags</span></div>
-            <div style={{ overflowY: 'auto', maxHeight: '180px' }}>
+            <div style={{ overflowY: 'auto', flex: 1 }}>
               <table className="tbl">
                 <thead><tr><th>Employee</th><th>Week</th><th>Project</th><th>Hours</th><th>Status</th></tr></thead>
                 <tbody>
