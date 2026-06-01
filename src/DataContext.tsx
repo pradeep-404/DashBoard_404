@@ -31,8 +31,13 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
     fetch('/api/entries')
       .then(r => r.json())
       .then(data => {
-        if (data.length > 0) {
-          setEntries(data);
+        if (Array.isArray(data)) {
+          // ALWAYS set entries from backend to clear mock data, 
+          // but we can preserve mock data initially if backend is totally empty?
+          // The user specifically requested 0 entries should show 0.
+          if (data.length > 0 || (typeof window !== 'undefined' && localStorage.getItem('has_synced'))) {
+            setEntries(data);
+          }
         }
         setLoading(false);
       })
@@ -44,6 +49,7 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
 
   const saveEntriesToBackend = async (newEntries: TimeEntry[]) => {
     try {
+      localStorage.setItem('has_synced', 'true');
       await fetch('/api/entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -136,14 +142,24 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
                 }
               }
 
-              const projName = getVal(['project name', 'project', 'proj', 'project id', 'proj id']) || 'Unknown';
+              const projName = getVal(['project name', 'project', 'proj', 'project id', 'proj id']);
+              const isProjUnknown = !projName;
               
+              const hrsStr = getVal(['hours worked', 'hours', 'hrs', 'time']);
+              let parsedHrs = 8;
+              if (hrsStr !== undefined && hrsStr !== '') {
+                const parsed = parseFloat(hrsStr);
+                if (!isNaN(parsed)) parsedHrs = parsed;
+              } else if (isProjUnknown && !getVal(['employee', 'employee name', 'name', 'emp name'])) {
+                return; // skip rows with no hours, no project, and no explicit employee
+              }
+
               newEntries.push({
                 date: dt,
                 employee: employeeName || 'Unknown Employee',
-                project: projName,
-                projectType: projectTypes[projName.toLowerCase()] || 'Unknown Type',
-                hours: parseFloat(getVal(['hours worked', 'hours', 'hrs', 'time']) || '8') || 8,
+                project: projName || 'Unknown',
+                projectType: projectTypes[(projName || '').toLowerCase()] || 'Unknown Type',
+                hours: parsedHrs,
                 task: getVal(['task', 'description']) || 'Development',
                 status: getVal(['status', 'staus']) || 'Completed',
                 remarks: getVal(['remarks', 'notes', 'remake']) || ''
@@ -155,7 +171,9 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
             setEntries(newEntries);
             await saveEntriesToBackend(newEntries);
           } else {
-            setToastMsg({ msg: "Warning: Wrong format! Please ensure your Excel file contains at minimum a 'Date' column.", type: 'error' });
+            setEntries([]);
+            await saveEntriesToBackend([]);
+            setToastMsg({ msg: "Warning: No valid timesheet entries found in this file.", type: 'error' });
           }
           resolve(newEntries.length);
         } catch (err) {
