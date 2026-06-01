@@ -26,16 +26,18 @@ export default function Page6() {
             <label>Month</label><FilterSelect value={month} onChange={setMonth} options={[{value:'all',label:'All'}, ...uniqueMonths.map(m=>({value:m,label:m}))]} />
             <div className="fsep"></div>
             <label>Project</label>
-            <FilterSelect value={projFilter} onChange={setProjFilter} options={[{value:'all',label:'All'}, ...[...new Set(entries.map(x=>x.project))].map(x=>({value:x,label:x}))]} />
+            <FilterSelect value={projFilter} onChange={setProjFilter} options={[{value:'all',label:'All'}, ...Array.from(new Set(entries.map(x=>x.project))).map(x=>({value:x,label:x}))]} />
           </div>
         </div>
         <div style={{ overflowY: 'auto', maxHeight: '500px' }}>
             {emps.map((emp, i) => {
                 const empEntries = filtered.filter(x => x.employee === emp);
-                const projects = [...new Set(empEntries.map(x => x.project))];
+                const validEmpEntries = empEntries.filter(e => e.hours > 0 && e.project !== 'Unknown' && !e.project.toLowerCase().includes('leave'));
+                const projects = [...new Set(validEmpEntries.map(x => x.project))];
                 if (projFilter !== 'all' && !projects.includes(projFilter)) return null;
 
-                const hrs = computeTotalHrs(empEntries);
+                const hrs = computeTotalHrs(validEmpEntries);
+                if (projects.length === 0 && hrs === 0) return null;
                 
                 return (
                     <div key={emp} style={{ border: '1px solid var(--color-border-secondary)', borderRadius: '6px', padding: '10px', marginBottom: '10px', background: 'var(--color-background-primary)' }}>
@@ -48,7 +50,7 @@ export default function Page6() {
                         </div>
                         <div>
                             {projects.map((p, j) => {
-                                const pHrs = computeTotalHrs(empEntries.filter(e => e.project === p));
+                                const pHrs = computeTotalHrs(validEmpEntries.filter(e => e.project === p));
                                 return (
                                     <div key={p} style={{ display: 'flex', gap: '8px', alignItems: 'center', margin: '4px 0 4px 10px', fontSize: '11px' }}>
                                         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: getColor(j) }}></div>

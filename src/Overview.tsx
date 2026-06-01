@@ -91,7 +91,7 @@ export default function Overview() {
                 <FilterSelect 
                   value={donutEmp} 
                   onChange={setDonutEmp} 
-                  options={[{value: 'all', label: 'All'}, ...[...new Set(entries.map(e => e.employee))].map(e => ({value: e, label: e}))]} 
+                  options={[{value: 'all', label: 'All'}, ...Array.from(new Set(entries.map(e => e.employee))).map(e => ({value: e, label: e}))]} 
                 />
               </div>
             </div>

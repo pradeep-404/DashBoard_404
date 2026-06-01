@@ -130,7 +130,10 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
               let dt = dateStr; // fallback if invalid date format
               if (!isNaN(parsedDate.getTime())) {
                 const pad = (n: number) => n.toString().padStart(2, '0');
-                dt = `${parsedDate.getFullYear()}-${pad(parsedDate.getMonth() + 1)}-${pad(parsedDate.getDate())}`;
+                let y = parsedDate.getFullYear();
+                if (y < 100) y += 2000;
+                else if (y < 2000 || y > 2100) y = new Date().getFullYear();
+                dt = `${y}-${pad(parsedDate.getMonth() + 1)}-${pad(parsedDate.getDate())}`;
               }
 
               const projName = getVal(['project name', 'project', 'proj', 'project id', 'proj id']);
@@ -138,6 +141,8 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
               
               const taskStr = getVal(['task', 'description']);
               const explicitEmp = getVal(['employee', 'employee name', 'name', 'emp name']);
+              const statusStr = getVal(['status', 'staus']);
+              const remarksStr = getVal(['remarks', 'notes', 'remake']);
 
               const hrsStr = getVal(['hours worked', 'hours', 'hrs', 'time']);
               let parsedHrs = 0;
@@ -146,6 +151,11 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
                 if (!isNaN(parsed)) parsedHrs = parsed;
               } else if (isProjUnknown && !explicitEmp && !taskStr) {
                 return; // skip rows with no hours, no project, no task, and no explicit employee
+              }
+
+              const isLeaveEntry = (remarksStr || '').toLowerCase().includes('leave') || (remarksStr || '').toLowerCase().includes('holiday');
+              if (isLeaveEntry) {
+                 parsedHrs = 0;
               }
 
               let employeeName = explicitEmp;

@@ -80,7 +80,7 @@ export function computeProjectHrs(entries: TimeEntry[]) {
   entries.forEach(e => {
     map[e.project] = (map[e.project] || 0) + e.hours;
   });
-  const arr = Object.entries(map).map(([name, hrs]) => ({ name, hrs }));
+  const arr = Object.entries(map).map(([name, hrs]) => ({ name, hrs })).filter(p => p.hrs > 0);
   arr.sort((a, b) => b.hrs - a.hrs);
   return arr;
 }
@@ -92,7 +92,7 @@ export function computeProjectTypeHrs(entries: TimeEntry[]) {
     const pt = e.projectType || 'Unknown Type';
     map[pt] = (map[pt] || 0) + e.hours;
   });
-  const arr = Object.entries(map).map(([name, hrs]) => ({ name, hrs }));
+  const arr = Object.entries(map).map(([name, hrs]) => ({ name, hrs })).filter(p => p.hrs > 0);
   arr.sort((a, b) => b.hrs - a.hrs);
   return arr;
 }
@@ -103,7 +103,7 @@ export function computeEmployeeHrs(entries: TimeEntry[]) {
   entries.forEach(e => {
     map[e.employee] = (map[e.employee] || 0) + e.hours;
   });
-  const arr = Object.entries(map).map(([name, hrs]) => ({ name, hrs }));
+  const arr = Object.entries(map).map(([name, hrs]) => ({ name, hrs })).filter(p => p.hrs > 0);
   arr.sort((a, b) => b.hrs - a.hrs);
   return arr;
 }
@@ -158,8 +158,8 @@ export function computeMissingTimesheets(entries: TimeEntry[], month: string) {
         }
       });
       
-      const isLeave = dayEntries.some(e => [e.project, e.status, e.task, e.remarks || ''].some(s => s.toLowerCase().includes('leave')));
-      const isHoliday = dayEntries.some(e => [e.project, e.status, e.task, e.remarks || ''].some(s => s.toLowerCase().includes('holiday')));
+      const isLeave = dayEntries.some(e => (e.remarks || '').toLowerCase().includes('leave'));
+      const isHoliday = dayEntries.some(e => (e.remarks || '').toLowerCase().includes('holiday'));
       
       if (isLeave) weeklyData[wStr].leaveDays++;
       if (isHoliday) weeklyData[wStr].holidayDays++;
