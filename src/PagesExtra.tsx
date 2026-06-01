@@ -109,7 +109,11 @@ export function Page5() {
   let missData = computeMissingTimesheets(entries, month);
   
   if (statusFilter !== 'all') {
-      missData = missData.filter(m => m.flag === statusFilter);
+      if (statusFilter === 'Under Hours') {
+          missData = missData.filter(m => m.flag.includes('Under Hrs'));
+      } else {
+          missData = missData.filter(m => m.flag === statusFilter);
+      }
   }
   if (empFilter !== 'all') {
       missData = missData.filter(m => m.emp === empFilter);
