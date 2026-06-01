@@ -129,10 +129,26 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
               let parsedDate = new Date(dateStr);
               let dt = dateStr; // fallback if invalid date format
               if (!isNaN(parsedDate.getTime())) {
-                dt = parsedDate.toISOString().split('T')[0];
+                const pad = (n: number) => n.toString().padStart(2, '0');
+                dt = `${parsedDate.getFullYear()}-${pad(parsedDate.getMonth() + 1)}-${pad(parsedDate.getDate())}`;
               }
 
-              let employeeName = getVal(['employee', 'employee name', 'name', 'emp name']);
+              const projName = getVal(['project name', 'project', 'proj', 'project id', 'proj id']);
+              const isProjUnknown = !projName;
+              
+              const taskStr = getVal(['task', 'description']);
+              const explicitEmp = getVal(['employee', 'employee name', 'name', 'emp name']);
+
+              const hrsStr = getVal(['hours worked', 'hours', 'hrs', 'time']);
+              let parsedHrs = 0;
+              if (hrsStr !== undefined && hrsStr !== '') {
+                const parsed = parseFloat(hrsStr);
+                if (!isNaN(parsed)) parsedHrs = parsed;
+              } else if (isProjUnknown && !explicitEmp && !taskStr) {
+                return; // skip rows with no hours, no project, no task, and no explicit employee
+              }
+
+              let employeeName = explicitEmp;
               if (!employeeName) {
                 if (file.name.toLowerCase().startsWith('timesheet_')) {
                   employeeName = file.name.replace(/^timesheet_/i, '').replace(/\.(csv|xlsx)$/i, '');
@@ -142,25 +158,13 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
                 }
               }
 
-              const projName = getVal(['project name', 'project', 'proj', 'project id', 'proj id']);
-              const isProjUnknown = !projName;
-              
-              const hrsStr = getVal(['hours worked', 'hours', 'hrs', 'time']);
-              let parsedHrs = 8;
-              if (hrsStr !== undefined && hrsStr !== '') {
-                const parsed = parseFloat(hrsStr);
-                if (!isNaN(parsed)) parsedHrs = parsed;
-              } else if (isProjUnknown && !getVal(['employee', 'employee name', 'name', 'emp name'])) {
-                return; // skip rows with no hours, no project, and no explicit employee
-              }
-
               newEntries.push({
                 date: dt,
                 employee: employeeName || 'Unknown Employee',
                 project: projName || 'Unknown',
                 projectType: projectTypes[(projName || '').toLowerCase()] || 'Unknown Type',
                 hours: parsedHrs,
-                task: getVal(['task', 'description']) || 'Development',
+                task: taskStr || 'Development',
                 status: getVal(['status', 'staus']) || 'Completed',
                 remarks: getVal(['remarks', 'notes', 'remake']) || ''
               });

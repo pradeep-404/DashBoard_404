@@ -186,7 +186,10 @@ export default function Overview() {
               {missData.slice(0, 3).map((r, i) => (
                 <tr key={i}>
                   <td>{r.emp}</td><td>{r.week}</td><td>{r.proj}</td><td>{r.hrs}</td>
-                  <td><span className={`badge b-org`}>Under Hours</span></td>
+                  <td>
+                    <span className={`badge b-org`}>{r.flag}</span>
+                    {r.missingDates && <div style={{fontSize: '11px', color: '#666', marginTop: '4px'}}>{r.missingDates}</div>}
+                  </td>
                 </tr>
               ))}
             </tbody>

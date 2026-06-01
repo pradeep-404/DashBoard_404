@@ -108,7 +108,7 @@ export function computeEmployeeHrs(entries: TimeEntry[]) {
   return arr;
 }
 
-// Compute miss (Under hours < 35 per week or Missing Entries)
+// Compute miss (Under hours < expected or Missing Entries)
 export function computeMissingTimesheets(entries: TimeEntry[], month: string) {
   const filtered = month === 'all' ? entries : entries.filter(e => getMonthFromDate(e.date) === month);
   
@@ -118,48 +118,92 @@ export function computeMissingTimesheets(entries: TimeEntry[], month: string) {
   const dates = [...new Set(filtered.map(e => e.date))].sort();
   if (dates.length === 0) return miss;
 
-  const start = new Date(dates[0]);
-  const end = new Date(dates[dates.length - 1]);
-  const allDays: string[] = [];
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    if (d.getDay() !== 0 && d.getDay() !== 6) {
-      allDays.push(d.toISOString().split('T')[0]);
-    }
-  }
+  const startD = new Date(dates[0]);
+  const endD = new Date(dates[dates.length - 1]);
+  const start = new Date(startD.getFullYear(), startD.getMonth(), startD.getDate());
+  const end = new Date(endD.getFullYear(), endD.getMonth(), endD.getDate());
 
-  const grouped: Record<string, Record<string, { hrs: number, proj: string }>> = {};
-  emps.forEach(emp => { grouped[emp] = {}; });
-
+  const groupedByEmpDate: Record<string, Record<string, TimeEntry[]>> = {};
+  emps.forEach(emp => { groupedByEmpDate[emp] = {}; });
   filtered.forEach(e => {
-    const w = formatWeek(getWeekFromDate(e.date));
-    if (!grouped[e.employee][w]) grouped[e.employee][w] = { hrs: 0, proj: e.project };
-    grouped[e.employee][w].hrs += e.hours;
-    if (!grouped[e.employee][w].proj.includes(e.project)) {
-      grouped[e.employee][w].proj += ', ' + e.project;
-    }
+    if (!groupedByEmpDate[e.employee][e.date]) groupedByEmpDate[e.employee][e.date] = [];
+    groupedByEmpDate[e.employee][e.date].push(e);
   });
 
   emps.forEach(emp => {
-     const empDates = new Set(filtered.filter(e => e.employee === emp).map(e => e.date));
-     const missingDays = allDays.filter(d => !empDates.has(d));
-     const missingByWeek: Record<string, string[]> = {};
-     
-     missingDays.forEach(d => {
-        if (month !== 'all' && getMonthFromDate(d) !== month) return;
-        const w = formatWeek(getWeekFromDate(d));
-        if (!missingByWeek[w]) missingByWeek[w] = [];
-        missingByWeek[w].push(d);
-     });
-     
-     for (const [w, wData] of Object.entries(grouped[emp] || {})) {
-         if (wData.hrs < 35) {
-            miss.push({ emp, week: w, proj: wData.proj, hrs: wData.hrs, flag: 'Under Hours' });
-         }
-     }
-     
-     for (const [w, mDays] of Object.entries(missingByWeek)) {
-         miss.push({ emp, week: w, proj: '—', hrs: 0, flag: 'Missing Entry', missingDates: mDays.join(', ') });
-     }
+    let curr = new Date(start);
+    const weeklyData: Record<string, { hrs: number, holidayDays: number, leaveDays: number, proj: string }> = {};
+    const weeklyMissingDays: Record<string, string[]> = {};
+    const weeklyUnderDays: Record<string, {date: string, hrs: number}[]> = {};
+    
+    while (curr <= end) {
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const dStr = `${curr.getFullYear()}-${pad(curr.getMonth() + 1)}-${pad(curr.getDate())}`;
+      
+      if (month !== 'all' && getMonthFromDate(dStr) !== month) {
+         curr.setDate(curr.getDate() + 1);
+         continue;
+      }
+      
+      const wStr = formatWeek(getWeekFromDate(dStr));
+      if (!weeklyData[wStr]) weeklyData[wStr] = { hrs: 0, holidayDays: 0, leaveDays: 0, proj: '' };
+      
+      const dayEntries = groupedByEmpDate[emp][dStr] || [];
+      const dayHrs = dayEntries.reduce((sum, e) => sum + e.hours, 0);
+      weeklyData[wStr].hrs += dayHrs;
+      
+      dayEntries.forEach(e => {
+        if (!weeklyData[wStr].proj.includes(e.project) && e.project && e.project !== 'Unknown') {
+            weeklyData[wStr].proj += (weeklyData[wStr].proj ? ', ' : '') + e.project;
+        }
+      });
+      
+      const isLeave = dayEntries.some(e => [e.project, e.status, e.task, e.remarks || ''].some(s => s.toLowerCase().includes('leave')));
+      const isHoliday = dayEntries.some(e => [e.project, e.status, e.task, e.remarks || ''].some(s => s.toLowerCase().includes('holiday')));
+      
+      if (isLeave) weeklyData[wStr].leaveDays++;
+      if (isHoliday) weeklyData[wStr].holidayDays++;
+      
+      const isWeekend = (curr.getDay() === 0 || curr.getDay() === 6);
+      
+      if (!isWeekend) {
+          if (dayHrs === 0 && !isLeave && !isHoliday) {
+              if (!weeklyMissingDays[wStr]) weeklyMissingDays[wStr] = [];
+              weeklyMissingDays[wStr].push(dStr.slice(-5));
+          } else if (dayHrs > 0 && dayHrs < 8 && !isLeave && !isHoliday) {
+              if (!weeklyUnderDays[wStr]) weeklyUnderDays[wStr] = [];
+              weeklyUnderDays[wStr].push({date: dStr.slice(-5), hrs: dayHrs});
+          }
+      }
+      curr.setDate(curr.getDate() + 1);
+    }
+    
+    for (const [w, wData] of Object.entries(weeklyData)) {
+       let addedDailyFlag = false;
+       if (weeklyMissingDays[w] && weeklyMissingDays[w].length > 0) {
+           miss.push({ emp, week: w, proj: '—', hrs: 0, flag: 'Missing Entry', missingDates: weeklyMissingDays[w].join(', ') });
+           addedDailyFlag = true;
+       }
+       if (weeklyUnderDays[w] && weeklyUnderDays[w].length > 0) {
+           miss.push({ 
+               emp, week: w, proj: wData.proj || '—', 
+               hrs: weeklyUnderDays[w].reduce((sum, item) => sum + item.hrs, 0), 
+               flag: 'Under Hrs (Day)', 
+               missingDates: weeklyUnderDays[w].map(item => `${item.date} (${item.hrs}h)`).join(', ') 
+           });
+           addedDailyFlag = true;
+       }
+       
+       const expectedWeekly = 40 - (wData.holidayDays * 8);
+       // Only add weekly under hours flag if we didn't already flag daily missing/under hours to reduce noise
+       if (wData.hrs < expectedWeekly && !addedDailyFlag) {
+           miss.push({ emp, week: w, proj: wData.proj || '—', hrs: wData.hrs, flag: 'Under Hrs (Week)' });
+       } else if (wData.hrs < expectedWeekly && wData.leaveDays > 0) {
+           // Wait, if they have leave, user said "show under hour by week only". 
+           // If they have missing entry AND leave, we show all flags for completeness.
+           miss.push({ emp, week: w, proj: wData.proj || '—', hrs: wData.hrs, flag: 'Under Hrs (Week)' });
+       }
+    }
   });
   
   return miss;
