@@ -73,9 +73,12 @@ export default function Overview() {
           <div className="hbars" style={{ maxHeight: '420px', overflowY: 'auto', paddingRight: '12px' }}>
             {projHrs.map((p, i) => (
               <div className="hbrow" key={p.name}>
-                <span className="hblabel">{p.name}</span>
-                <div className="hbtrack">
-                  <div className="hbfill" style={{ width: `${Math.max(5, (p.hrs / maxProjHr) * 100)}%`, background: getColor(i) }}>{p.hrs}h</div>
+                <span className="hblabel" title={p.name}>{p.name}</span>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div className="hbtrack">
+                    <div className="hbfill" style={{ width: `${Math.max(1, (p.hrs / maxProjHr) * 100)}%`, background: getColor(i), paddingLeft: 0 }}></div>
+                  </div>
+                  <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-primary)', width: '35px' }}>{p.hrs}h</span>
                 </div>
               </div>
             ))}
@@ -105,15 +108,6 @@ export default function Overview() {
                   return (
                     <g key={p.name}>
                       <circle cx="60" cy="60" r="40" fill="none" stroke={getColor(i)} strokeWidth="18" strokeDasharray={`${dash} ${C - dash}`} strokeDashoffset={-currentOff} />
-                      {(p.hrs / donutTotal) > 0.03 && (
-                        <text
-                          x={60 + 30 * Math.cos(2 * Math.PI * ((currentOff + dash / 2) / C) - Math.PI / 2)}
-                          y={60 + 30 * Math.sin(2 * Math.PI * ((currentOff + dash / 2) / C) - Math.PI / 2)}
-                          textAnchor="middle" dominantBaseline="central" fontSize="7" fill="#fff" fontWeight="bold" pointerEvents="none"
-                        >
-                          {p.name.length > 7 ? p.name.substring(0, 6) + '..' : p.name}
-                        </text>
-                      )}
                     </g>
                   );
                 })}
@@ -121,7 +115,6 @@ export default function Overview() {
               </svg>
               <div className="leg" style={{ maxHeight: '120px', overflowY: 'auto', paddingRight: '4px' }}>
                 {donutMap.map((p, i) => {
-                  if ((p.hrs / donutTotal) <= 0.03) return null;
                   return (
                     <div className="li" key={p.name}>
                       <div className="li-dot" style={{ background: getColor(i) }}></div>
@@ -158,17 +151,17 @@ export default function Overview() {
                 
                 return (
                     <>
-                        <div className="trend">
+                        <div className="trend" style={{ justifyContent: trendData.length < 4 ? 'space-around' : undefined }}>
                             {trendData.map((v, i) => (
-                                <div key={i} className="tbar" style={{ height: `${Math.max(5, (v / maxTrend) * 100)}%`, background: getColor(i) }}>
+                                <div key={i} className="tbar" style={{ height: `${Math.max(5, (v / maxTrend) * 100)}%`, background: getColor(i), flex: trendData.length < 4 ? '0 1 40px' : undefined }}>
                                     <span>{v}h</span>
                                 </div>
                             ))}
                         </div>
-                        <div className="xlabels">
-                            {wks.map(w => {
+                        <div className="xlabels" style={{ justifyContent: wks.length < 4 ? 'space-around' : undefined }}>
+                            {wks.map((w, i) => {
                                 const parseDate = new Date(w);
-                                return <div key={w} className="xl">{parseDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</div>;
+                                return <div key={w} className="xl" style={{ flex: wks.length < 4 ? '0 1 70px' : undefined }}>{parseDate.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}</div>;
                             })}
                         </div>
                     </>

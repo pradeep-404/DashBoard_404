@@ -146,10 +146,13 @@ export function computeMissingTimesheets(entries: TimeEntry[], month: string) {
       start = floorDate;
   }
   
-  // Track missing timesheets up to today's date
+  // Track missing timesheets up to today's date, but only include today if after 6 PM
   const todayDate = new Date();
-  const today = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
-  end = today;
+  if (todayDate.getHours() < 18) {
+      todayDate.setDate(todayDate.getDate() - 1);
+  }
+  let today = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
+  if (end > today) { end = today; }
 
   const groupedByEmpDate: Record<string, Record<string, TimeEntry[]>> = {};
   emps.forEach(emp => { groupedByEmpDate[emp] = {}; });
@@ -238,7 +241,7 @@ export function computeMissingTimesheets(entries: TimeEntry[], month: string) {
   return miss;
 }
 
-export const COLORS = ['#185FA5', '#0F6E56', '#534AB7', '#993C1D', '#854F0B', '#1D9E75', '#3C3489', '#D85A30', '#639922', '#7B3F8C'];
+export const COLORS = ['#185FA5', '#0F6E56', '#534AB7', '#993C1D', '#854F0B', '#1D9E75', '#3C3489', '#D85A30', '#639922', '#7B3F8C', '#2884D8', '#14A370', '#746AC9', '#D34C1A', '#B56B10', '#D11D53', '#A8116C', '#1D5A79', '#C08D16', '#317342'];
 export function getColor(i: number) {
   return COLORS[i % COLORS.length];
 }

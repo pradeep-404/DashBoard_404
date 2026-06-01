@@ -9,7 +9,7 @@ export default function Page1() {
   const { entries } = useData();
   const [month, setMonth] = useState('all');
   const [pg, setPg] = useState(0);
-  const perPage = 5;
+  const perPage = 10;
   const uniqueMonths = getUniqueMonths(entries);
 
   const filtered = filterEntries(entries, month, 'all');
@@ -59,22 +59,29 @@ export default function Page1() {
               </tr>
             </thead>
             <tbody>
-              {heatMapData.map((row) => (
-                  <tr key={row.name}>
-                      <td style={{ padding: '6px 4px', fontWeight: 500, color: 'var(--color-text-primary)' }}>{row.name}</td>
-                      {row.weeks.map((w, j) => (
-                          <td key={j} style={{ textAlign: 'center' }}>
-                              <span className="hcell" style={{ 
-                                  background: w === 0 ? 'var(--color-background-secondary)' : `rgba(24, 95, 165, ${Math.max(0.2, w / 40)})`, 
-                                  color: w > 20 ? '#fff' : 'var(--color-text-primary)' 
-                              }}>
-                                  {w > 0 ? `${w}h` : '—'}
-                              </span>
-                          </td>
-                      ))}
-                      <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{row.total}h</td>
-                  </tr>
-              ))}
+              {heatMapData.map((row, rowIndex) => {
+                  const baseHex = getColor(rowIndex + pg * perPage);
+                  const r = parseInt(baseHex.substring(1, 3), 16);
+                  const g = parseInt(baseHex.substring(3, 5), 16);
+                  const b = parseInt(baseHex.substring(5, 7), 16);
+                  
+                  return (
+                      <tr key={row.name}>
+                          <td style={{ padding: '6px 4px', fontWeight: 500, color: 'var(--color-text-primary)' }}>{row.name}</td>
+                          {row.weeks.map((w, j) => (
+                              <td key={j} style={{ textAlign: 'center' }}>
+                                  <span className="hcell" style={{ 
+                                      background: w === 0 ? 'var(--color-background-secondary)' : `rgba(${r}, ${g}, ${b}, ${Math.max(0.2, w / 40)})`, 
+                                      color: w > 20 ? '#fff' : 'var(--color-text-primary)' 
+                                  }}>
+                                      {w > 0 ? `${w}h` : '—'}
+                                  </span>
+                              </td>
+                          ))}
+                          <td style={{ textAlign: 'center', fontWeight: 'bold' }}>{row.total}h</td>
+                      </tr>
+                  )
+              })}
               {heatMapData.length === 0 && <tr><td colSpan={uniqueWeeks.length + 2} style={{textAlign: 'center', padding: '10px'}}>No data</td></tr>}
             </tbody>
           </table>
