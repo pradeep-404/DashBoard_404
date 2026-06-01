@@ -103,7 +103,7 @@ export function computeEmployeeHrs(entries: TimeEntry[]) {
   entries.forEach(e => {
     map[e.employee] = (map[e.employee] || 0) + e.hours;
   });
-  const arr = Object.entries(map).map(([name, hrs]) => ({ name, hrs })).filter(p => p.hrs > 0);
+  const arr = Object.entries(map).map(([name, hrs]) => ({ name, hrs }));
   arr.sort((a, b) => b.hrs - a.hrs);
   return arr;
 }
@@ -114,18 +114,47 @@ export function computeMissingTimesheets(entries: TimeEntry[], month: string) {
   
   const miss: Array<{ emp: string, week: string, proj: string, hrs: number, flag: string, missingDates?: string }> = [];
   
-  const emps = [...new Set(filtered.map(e => e.employee))];
-  const dates = [...new Set(filtered.map(e => e.date))].sort();
-  if (dates.length === 0) return miss;
+  const emps = [...Array.from(new Set(entries.map(e => e.employee)))]; // Use all employees, not just filtered
+  const dates = [...Array.from(new Set(filtered.map(e => e.date)))].sort();
+  
+  let startD;
+  let endD;
+  
+  if (dates.length === 0) {
+      // If there are no entries in the filtered month, but we know the month, start from the 1st of that month
+      startD = new Date();
+      endD = new Date();
+      if (month !== 'all') {
+         // parse month string "YYYY-MM"
+         const [y, m] = month.split('-').map(Number);
+         if (y && m) {
+            startD = new Date(y, m - 1, 1);
+            endD = new Date(y, m, 0); // last day of month
+         }
+      }
+  } else {
+      startD = new Date(dates[0]);
+      endD = new Date(dates[dates.length - 1]);
+  }
+  
+  let start = new Date(startD.getFullYear(), startD.getMonth(), startD.getDate());
+  let end = new Date(endD.getFullYear(), endD.getMonth(), endD.getDate());
 
-  const startD = new Date(dates[0]);
-  const endD = new Date(dates[dates.length - 1]);
-  const start = new Date(startD.getFullYear(), startD.getMonth(), startD.getDate());
-  const end = new Date(endD.getFullYear(), endD.getMonth(), endD.getDate());
+  // Enforce missing tracking strictly from June 1st, 2026 onwards as requested
+  const floorDate = new Date(2026, 5, 1); // June is 5 in zero-indexed getMonth()
+  if (start < floorDate) {
+      start = floorDate;
+  }
+  
+  // Track missing timesheets up to today's date
+  const todayDate = new Date();
+  const today = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
+  end = today;
 
   const groupedByEmpDate: Record<string, Record<string, TimeEntry[]>> = {};
   emps.forEach(emp => { groupedByEmpDate[emp] = {}; });
   filtered.forEach(e => {
+    if (!groupedByEmpDate[e.employee]) groupedByEmpDate[e.employee] = {}; // safety fallback
     if (!groupedByEmpDate[e.employee][e.date]) groupedByEmpDate[e.employee][e.date] = [];
     groupedByEmpDate[e.employee][e.date].push(e);
   });
@@ -148,18 +177,22 @@ export function computeMissingTimesheets(entries: TimeEntry[], month: string) {
       const wStr = formatWeek(getWeekFromDate(dStr));
       if (!weeklyData[wStr]) weeklyData[wStr] = { hrs: 0, holidayDays: 0, leaveDays: 0, proj: '' };
       
-      const dayEntries = groupedByEmpDate[emp][dStr] || [];
-      const dayHrs = dayEntries.reduce((sum, e) => sum + e.hours, 0);
+      const dayEntries = (groupedByEmpDate[emp] && groupedByEmpDate[emp][dStr]) ? groupedByEmpDate[emp][dStr] : [];
+      
+      // If a row has 'Unknown' project, it counts as 0 hours for filling timesheet, unless it's leave/holiday
+      const validDayEntries = dayEntries.filter(e => e.project !== 'Unknown');
+      
+      const dayHrs = validDayEntries.reduce((sum, e) => sum + e.hours, 0);
       weeklyData[wStr].hrs += dayHrs;
       
-      dayEntries.forEach(e => {
+      validDayEntries.forEach(e => {
         if (!weeklyData[wStr].proj.includes(e.project) && e.project && e.project !== 'Unknown') {
             weeklyData[wStr].proj += (weeklyData[wStr].proj ? ', ' : '') + e.project;
         }
       });
       
-      const isLeave = dayEntries.some(e => (e.remarks || '').toLowerCase().includes('leave'));
-      const isHoliday = dayEntries.some(e => (e.remarks || '').toLowerCase().includes('holiday'));
+      const isLeave = dayEntries.some(e => (e.remarks || '').toLowerCase().includes('leave') || (e.project || '').toLowerCase().includes('leave'));
+      const isHoliday = dayEntries.some(e => (e.remarks || '').toLowerCase().includes('holiday') || (e.project || '').toLowerCase().includes('holiday'));
       
       if (isLeave) weeklyData[wStr].leaveDays++;
       if (isHoliday) weeklyData[wStr].holidayDays++;
@@ -194,13 +227,9 @@ export function computeMissingTimesheets(entries: TimeEntry[], month: string) {
            addedDailyFlag = true;
        }
        
-       const expectedWeekly = 40 - (wData.holidayDays * 8);
+       const expectedWeekly = 40 - (wData.holidayDays * 8) - (wData.leaveDays * 8);
        // Only add weekly under hours flag if we didn't already flag daily missing/under hours to reduce noise
        if (wData.hrs < expectedWeekly && !addedDailyFlag) {
-           miss.push({ emp, week: w, proj: wData.proj || '—', hrs: wData.hrs, flag: 'Under Hrs (Week)' });
-       } else if (wData.hrs < expectedWeekly && wData.leaveDays > 0) {
-           // Wait, if they have leave, user said "show under hour by week only". 
-           // If they have missing entry AND leave, we show all flags for completeness.
            miss.push({ emp, week: w, proj: wData.proj || '—', hrs: wData.hrs, flag: 'Under Hrs (Week)' });
        }
     }

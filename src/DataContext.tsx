@@ -114,6 +114,10 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
             const sheet = workbook.Sheets[sheetName];
             const json = xlsx.utils.sheet_to_json<any>(sheet, { raw: false });
             
+            let lastValidDate = '';
+            let lastValidEmp = '';
+            let addedFromSheet = 0;
+            
             json.forEach((row: any) => {
               const getVal = (keys: string[]) => {
                 const lowerRow = Object.fromEntries(Object.entries(row).map(([k, v]) => [k.toLowerCase().trim(), String(v).trim()]));
@@ -123,8 +127,16 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
                 return undefined;
               };
 
-              let dateStr = getVal(['date', 'data']);
-              if (!dateStr) return; // skip rows without dates
+              let dateStr = getVal(['date', 'data', 'day', 'days', 'dated', 'date worked', 'work date', 'log date', 'date of work']);
+              if (!dateStr) {
+                  if (lastValidDate) {
+                      dateStr = lastValidDate;
+                  } else {
+                      return; // skip rows without dates
+                  }
+              } else {
+                  lastValidDate = dateStr;
+              }
               
               let parsedDate = new Date(dateStr);
               let dt = dateStr; // fallback if invalid date format
@@ -140,7 +152,12 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
               const isProjUnknown = !projName;
               
               const taskStr = getVal(['task', 'description']);
-              const explicitEmp = getVal(['employee', 'employee name', 'name', 'emp name']);
+              let explicitEmp = getVal(['employee', 'employee name', 'name', 'emp name', 'emp', 'employee id', 'emp id', 'resource', 'staff', 'team member', 'member']);
+              if (!explicitEmp && lastValidEmp) {
+                  explicitEmp = lastValidEmp;
+              } else if (explicitEmp) {
+                  lastValidEmp = explicitEmp;
+              }
               const statusStr = getVal(['status', 'staus']);
               const remarksStr = getVal(['remarks', 'notes', 'remake']);
 
@@ -178,7 +195,26 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
                 status: getVal(['status', 'staus']) || 'Completed',
                 remarks: getVal(['remarks', 'notes', 'remake']) || ''
               });
+              addedFromSheet++;
             });
+            
+            // If the sheet belongs to an employee but has no valid entries, inject a dummy entry
+            // to ensure the employee is still tracked for missing timesheets
+            if (addedFromSheet === 0 && sheetName !== 'Sheet1') {
+                const pad = (n: number) => n.toString().padStart(2, '0');
+                const today = new Date();
+                const dt = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+                newEntries.push({
+                   date: dt,
+                   employee: sheetName,
+                   project: 'Unknown',
+                   projectType: 'Unknown Type',
+                   hours: 0,
+                   task: 'No Entry',
+                   status: 'Completed',
+                   remarks: ''
+                });
+            }
           }
           
           if (newEntries.length > 0) {
