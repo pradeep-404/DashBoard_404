@@ -1,15 +1,19 @@
 import React, { useState } from 'react';
 import { Users, BarChart3, FileText, ListIcon, Download, Flag, UserCheck, Grid } from 'lucide-react';
 import { useData } from './DataContext';
-import { filterEntries, computeEmployeeHrs, getColor, computeMissingTimesheets, getUniqueMonths } from './utils';
+import { filterEntries, computeEmployeeHrs, getColor, computeMissingTimesheets, getUniqueMonths, getUniqueDates } from './utils';
 import FilterSelect from './FilterSelect';
 
 export function Page3() {
   const { entries } = useData();
   const [month, setMonth] = useState('all');
+  const [date, setDate] = useState('all');
   const uniqueMonths = getUniqueMonths(entries);
+  
+  // Get available dates for the selected month to populate the Date dropdown
+  const availableDates = getUniqueDates(month === 'all' ? entries : filterEntries(entries, month, 'all'));
 
-  const filtered = filterEntries(entries, month, 'all');
+  const filtered = filterEntries(entries, month, 'all', 'all', 'all', 'all', date);
   const empMap = computeEmployeeHrs(filtered);
   const maxHr = empMap[0]?.hrs || 1;
 
@@ -18,17 +22,27 @@ export function Page3() {
       <div className="pgtitle"><Users size={24} className="text-[#185FA5]" />Employee hours</div>
       <div className="card">
         <div className="ctitle"><BarChart3 size={20} className="text-slate-500 shrink-0" /><span className="ctitle-name">Total hours per employee</span>
-        <div className="cf"><label>Month</label><FilterSelect value={month} onChange={setMonth} options={[{value:'all',label:'All'}, ...uniqueMonths.map(m=>({value:m,label:m}))]} /></div>
+        <div className="cf">
+            <label>Month</label>
+            <FilterSelect value={month} onChange={(v) => {setMonth(v); setDate('all');}} options={[{value:'all',label:'All'}, ...uniqueMonths.map(m=>({value:m,label:m}))]} />
+            <div className="fsep"></div>
+            <label>Date</label>
+            <FilterSelect value={date} onChange={setDate} options={[{value:'all',label:'All'}, ...availableDates.map(d=>({value:d,label:d}))]} />
         </div>
-        <div className="hbars">
+        </div>
+        <div className="hbars" style={{ maxHeight: '420px', overflowY: 'auto', paddingRight: '12px' }}>
           {empMap.map((e, i) => (
               <div className="hbrow" key={e.name}>
                   <span className="hblabel">{e.name}</span>
-                  <div className="hbtrack">
-                      <div className="hbfill" style={{ width: `${Math.max(5, (e.hrs/maxHr)*100)}%`, background: getColor(i) }}>{e.hrs}h</div>
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div className="hbtrack">
+                          <div className="hbfill" style={{ width: `${Math.max(1, (e.hrs/maxHr)*100)}%`, background: getColor(i), paddingLeft: 0 }}></div>
+                      </div>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-text-primary)', width: '35px' }}>{e.hrs}h</span>
                   </div>
               </div>
           ))}
+          {empMap.length === 0 && <div style={{textAlign: 'center', color: 'var(--color-text-secondary)', padding: '20px'}}>No data available for the selected filters.</div>}
         </div>
       </div>
     </div>

@@ -53,10 +53,18 @@ export function getUniqueWeeks(entries: TimeEntry[]) {
   return Array.from(weeks).sort();
 }
 
-export function filterEntries(entries: TimeEntry[], month: string, week: string, emp: string = 'all', proj: string = 'all', projectType: string = 'all') {
+export function getUniqueDates(entries: TimeEntry[]) {
+  const dates = new Set<string>();
+  entries.forEach(e => dates.add(e.date));
+  return Array.from(dates).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+}
+
+export function filterEntries(entries: TimeEntry[], month: string, week: string, emp: string = 'all', proj: string = 'all', projectType: string = 'all', date: string = 'all') {
   return entries.filter(e => {
-    // If specific week is selected, ignore the month filter to show the complete overlapping week
-    if (week !== 'all') {
+    if (date !== 'all') {
+        if (e.date !== date) return false;
+    } else if (week !== 'all') {
+      // If specific week is selected, ignore the month filter to show the complete overlapping week
       if (getWeekFromDate(e.date) !== week) return false;
     } else {
       if (month !== 'all' && getMonthFromDate(e.date) !== month) return false;
