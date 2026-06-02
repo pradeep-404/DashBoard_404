@@ -14,7 +14,12 @@ export function Page3() {
   const availableDates = getUniqueDates(month === 'all' ? entries : filterEntries(entries, month, 'all'));
 
   const filtered = filterEntries(entries, month, 'all', 'all', 'all', 'all', date);
-  const empMap = computeEmployeeHrs(filtered);
+  const empMapRaw = computeEmployeeHrs(filtered);
+  const allEmployees = Array.from(new Set<string>(entries.map(e => e.employee)));
+  const empMap = allEmployees.map(emp => {
+      const existing = empMapRaw.find(e => e.name === emp);
+      return existing ? existing : { name: emp, hrs: 0 };
+  }).sort((a, b) => b.hrs - a.hrs);
   const maxHr = empMap[0]?.hrs || 1;
 
   return (
