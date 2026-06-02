@@ -166,8 +166,8 @@ export const DataProvider: React.FC<{children: React.ReactNode}> = ({ children }
               if (hrsStr !== undefined && hrsStr !== '') {
                 const parsed = parseFloat(hrsStr);
                 if (!isNaN(parsed)) parsedHrs = parsed;
-              } else if (isProjUnknown && !explicitEmp && !taskStr) {
-                return; // skip rows with no hours, no project, no task, and no explicit employee
+              } else if (isProjUnknown && !explicitEmp && !taskStr && !(remarksStr && (remarksStr.toLowerCase().includes('leave') || remarksStr.toLowerCase().includes('holiday')))) {
+                return; // skip rows with no hours, no project, no task, and no explicit employee (unless they are marked as leave/holiday)
               }
 
               const isLeaveEntry = (remarksStr || '').toLowerCase().includes('leave') || (remarksStr || '').toLowerCase().includes('holiday');
